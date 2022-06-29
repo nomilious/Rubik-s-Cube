@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#my 
+models/
+screenshot/
+textures/
+LICENSE
