@@ -39,24 +39,22 @@ for x in range(0, 3*size, size):
 
 
 # create_sensors
-# relative to red side(front side)
-# parent_col = Entity(visible=False)
 collider = Entity(model='cube', scale=3*size, collider='box', visible=False)
 a= Text(text='')
+# get the clicked square
 def get_square(position):
-    R, L, T, D = 'R', 'L', 'T', 'D'
+    R, L, T, D = 'R', 'L', 'T', 'D' # possition relative to red side
     if (abs(position.z) == 1.5*size):# front and back sides. 
-        if position.z > 0:
+        if position.z > 0:#for 'flipped'
             R, L, T, D = 'L', 'R', 'D', 'T'
         Vec_hor, Vec_ver = position.x, position.y
     elif (abs(position.x) == 1.5*size): # left and right sides. 
-        if position.x > 0:
+        if position.x > 0:#for 'flipped'
             R, L, T, D = 'L', 'R', 'D', 'T'
         Vec_hor, Vec_ver = position.z, position.y
     elif (abs(position.y) == 1.5*size): # top and down sides. 
-        if position.y < 0:
+        if position.y < 0:#for 'flipped'
             R, L, T, D = 'L', 'R', 'D', 'T'
-        Vec_const = position.y
         Vec_hor, Vec_ver = position.x, position.z
     else:
         return 'I don\'t know'
@@ -81,15 +79,14 @@ def get_square(position):
         return f"{T}{L}corner"
 
 def input(key):
-    # a.text=f'anim_trigger={action_trigger}'
-    if action_trigger:
-        for hitinfo in mouse.collisions:
-            collider_name = hitinfo.entity.name
-            if key == 'left mouse down':# R, L, F, U
-                print("I'm here please ",mouse.world_point[:2])
-                rotate_side(mouse.normal,collider_name, 1)
-            elif key == 'right mouse down':# R', L', F', U'
-                rotate_side(mouse.normal,collider_name, -1)
+    if not action_trigger:
+        return
+    for hitinfo in mouse.collisions:
+        collider_name = hitinfo.entity.name
+        if key == 'left mouse down':# R, L, F, U
+            rotate_side(mouse.normal,mouse.world_point, 1)
+        elif key == 'right mouse down':# R', L', F', U'
+            rotate_side(mouse.normal,mouse.world_point, -1)
 
 rotation_helper = Entity()
 def toggle_animation_trigger():
@@ -97,12 +94,11 @@ def toggle_animation_trigger():
     global action_trigger
     action_trigger = True
 
-def rotate_side(normal, colider_name,direction=1, speed =0.5):
+def rotate_side(normal, world_point,direction=1, speed =0.5):
     global cubes, rotation_helper, action_trigger
     action_trigger = False
-    a.text = colider_name
-    print(a.position)
-    print(f"HERE: at {normal} does {colider_name}")
+
+    square = get_square(world_point) 
     # if normal == Vec3(0,0, -1): # front
     #     if colider_name == 'R':
     #         [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.x > 0]
@@ -119,7 +115,6 @@ def rotate_side(normal, colider_name,direction=1, speed =0.5):
     
     invoke(reset_rotation_helper, delay=speed+0.11)
     invoke(toggle_animation_trigger, delay=speed+0.11)
-    print("\n\n")
 
 
 def reset_rotation_helper():
