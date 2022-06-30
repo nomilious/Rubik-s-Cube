@@ -1,3 +1,4 @@
+from this import s
 from ursina import *
 
 
@@ -50,19 +51,20 @@ collider = Entity(model='cube', scale=3*size, collider='box', visible=False)
 a= Text(text='')
 # get the clicked square
 def get_square(position):
+    print(position)
     R, L, T, D = 'R', 'L', 'T', 'D' # possition relative to red side
-    if (abs(position.z) == 1.5*size):# front and back sides. 
+    if round(abs(position.z),4) == 1.5*size:# front and back sides. 
         if position.z > 0:#for 'flipped'
             R, L, T, D = 'L', 'R', 'D', 'T'
-        Vec_hor, Vec_ver = position.x, position.y
-    elif (abs(position.x) == 1.5*size): # left and right sides. 
+        Vec_hor, Vec_ver = round(position.x,4), round(position.y,4)
+    elif round(abs(position.x),4) == 1.5*size: # left and right sides. 
         if position.x > 0:#for 'flipped'
             R, L, T, D = 'L', 'R', 'D', 'T'
-        Vec_hor, Vec_ver = position.z, position.y
-    elif (abs(position.y) == 1.5*size): # top and down sides. 
+        Vec_hor, Vec_ver = round(position.z,4), round(position.y,4)
+    elif round(abs(position.y),4) == 1.5*size: # top and down sides. 
         if position.y < 0:#for 'flipped'
             R, L, T, D = 'L', 'R', 'D', 'T'
-        Vec_hor, Vec_ver = position.x, position.z
+        Vec_hor, Vec_ver = round(position.x,4), round(position.z,4)
     else:
         return 'I don\'t know'
 
@@ -86,7 +88,7 @@ def get_square(position):
         return f"{T}{L}corner"
 
 def input(key):
-    if not action_trigger:
+    if not action_trigger or not mouse.normal:
         return
     for hitinfo in mouse.collisions:
         collider_name = hitinfo.entity.name
@@ -106,6 +108,7 @@ def rotate_side(normal, world_point,direction=1, speed =0.5):
     action_trigger = False
 
     square = get_square(world_point) 
+    a.text = square
     # if normal == Vec3(0,0, -1): # front
     #     if colider_name == 'R':
     #         [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.x > 0]
@@ -128,6 +131,6 @@ def reset_rotation_helper():
     [setattr(e, 'world_parent', scene) for e in cubes]
     rotation_helper.rotation = (0,0,0)
         
-
+window.color = color._16
 EditorCamera()
 app.run()
