@@ -18,21 +18,10 @@ for i in range(3):
     dir = Vec3(0,0,0)
     dir[i] = 1
 
-    e = Entity(
-        parent=combine_parent, 
-        model='plane', 
-        origin_y=-.5, 
-        color=cube_colors[i*2]
-        )
-    e.look_at(dir, 'up')
-    print("HEREEEEEEEEEEE ",e.position, e.rotation, e.origin)
-
     e_flipped = Entity(parent=combine_parent, model='plane', origin_y=-.5, color=cube_colors[(i*2)+1])
     e_flipped.look_at(-dir, 'up')
 
-    print(e.scale)
-    e.scale = e_flipped.scale= size
-    print("HEEEEEEEEERE",e.scale)
+    # e.scale = e_flipped.scale= size
 
 combine_parent.combine()
 
@@ -51,23 +40,53 @@ for x in range(0, 3*size, size):
 
 # create_sensors
 # relative to red side(front side)
-parent_col = Entity(visible=False)
-size+=0.01
-L = Entity(parent = parent_col,name = 'L',model='cube', position=(-size, 0, 0), scale=(size, 3*size, 3*size), collider='box', visible=False)
-R = Entity(parent = parent_col,name = 'R',model='cube', position=(size, 0, 0), scale=(size, 3*size, 3*size), collider='box', visible=False)
-F = Entity(parent = parent_col,name = 'F',model='cube', position=(0,0, -size), scale=(3*size, 3*size, size), collider='box', visible=False)
-BACK_F = Entity(parent = parent_col,name = 'BACK_F',model='cube', position=(0,0, size), scale=(3*size, 3*size, size), collider='box', visible=False)
-U = Entity(parent = parent_col,name = 'U',model='cube', position=(0,size, 0), scale=(3*size, size, 3*size), collider='box', visible=False)
-D = Entity(parent = parent_col,name = 'D',model='cube', position=(0,-size, 0), scale=(3*size, size, 3*size), collider='box', visible=False)
+# parent_col = Entity(visible=False)
+collider = Entity(model='cube', scale=3*size, collider='box', visible=False)
 a= Text(text='')
+def get_square(position):
+    R, L, T, D = 'R', 'L', 'T', 'D'
+    if (abs(position.z) == 1.5*size):# front and back sides. 
+        if position.z > 0:
+            R, L, T, D = 'L', 'R', 'D', 'T'
+        Vec_hor, Vec_ver = position.x, position.y
+    elif (abs(position.x) == 1.5*size): # left and right sides. 
+        if position.x > 0:
+            R, L, T, D = 'L', 'R', 'D', 'T'
+        Vec_hor, Vec_ver = position.z, position.y
+    elif (abs(position.y) == 1.5*size): # top and down sides. 
+        if position.y < 0:
+            R, L, T, D = 'L', 'R', 'D', 'T'
+        Vec_const = position.y
+        Vec_hor, Vec_ver = position.x, position.z
+    else:
+        return 'I don\'t know'
 
-# parent_col.input = input
+    if abs(Vec_hor) < 0.5*size and abs(Vec_ver) < 0.5*size: #center
+        return "center"
+    elif abs(Vec_hor) < 1.5*size and abs(Vec_ver) < 0.5*size: # right-left centers
+        if Vec_hor > 0:
+            return f"{R}center"
+        return f"{L}center"
+    elif abs(Vec_hor) < 0.5*size and abs(Vec_ver) < 1.5*size: #top-down of centers
+        if Vec_ver > 0:
+            return f'{T}center'
+        return f'{D}center'
+    elif abs(Vec_hor) < 1.5*size and abs(Vec_ver) < 1.5*size:# corners
+        if Vec_hor > 0 and Vec_ver > 0:
+            return f"{T}{R}corner"
+        elif Vec_hor < 0 and Vec_ver < 0:
+            return f"{D}{L}corner"
+        elif Vec_hor > 0 and Vec_ver > 0:
+            return f"{D}{R}corner"
+        return f"{T}{L}corner"
+
 def input(key):
     # a.text=f'anim_trigger={action_trigger}'
     if action_trigger:
         for hitinfo in mouse.collisions:
             collider_name = hitinfo.entity.name
             if key == 'left mouse down':# R, L, F, U
+                print("I'm here please ",mouse.world_point[:2])
                 rotate_side(mouse.normal,collider_name, 1)
             elif key == 'right mouse down':# R', L', F', U'
                 rotate_side(mouse.normal,collider_name, -1)
@@ -82,22 +101,25 @@ def rotate_side(normal, colider_name,direction=1, speed =0.5):
     global cubes, rotation_helper, action_trigger
     action_trigger = False
     a.text = colider_name
-    if normal == Vec3(0,0, -1): # front
-        if colider_name == 'R':
-            [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.x > 0]
-            rotation_helper.animate('rotation_x', 90 * direction, duration=speed)
-        elif colider_name == 'L':
-            [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.x < 0]
-            rotation_helper.animate('rotation_x', 90 * direction, duration=speed)
-        elif colider_name == 'U':
-            [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.y > 0]
-            rotation_helper.animate('rotation_y', 90 * direction, duration=speed)
-        elif colider_name == 'D':
-            [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.y < 0]
-            rotation_helper.animate('rotation_y', 90 * direction, duration=speed)
+    print(a.position)
+    print(f"HERE: at {normal} does {colider_name}")
+    # if normal == Vec3(0,0, -1): # front
+    #     if colider_name == 'R':
+    #         [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.x > 0]
+    #         rotation_helper.animate('rotation_x', 90 * direction, duration=speed)
+    #     elif colider_name == 'L':
+    #         [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.x < 0]
+    #         rotation_helper.animate('rotation_x', 90 * direction, duration=speed)
+    #     elif colider_name == 'U':
+    #         [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.y > 0]
+    #         rotation_helper.animate('rotation_y', 90 * direction, duration=speed)
+    #     elif colider_name == 'D':
+    #         [setattr(e, 'world_parent', rotation_helper) for e in cubes if e.y < 0]
+    #         rotation_helper.animate('rotation_y', 90 * direction, duration=speed)
     
     invoke(reset_rotation_helper, delay=speed+0.11)
     invoke(toggle_animation_trigger, delay=speed+0.11)
+    print("\n\n")
 
 
 def reset_rotation_helper():
