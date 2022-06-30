@@ -17,11 +17,18 @@ combine_parent = Entity(enabled=False)
 for i in range(3):
     dir = Vec3(0,0,0)
     dir[i] = 1
+    e = Entity(
+        parent=combine_parent, 
+        model='plane', 
+        origin_y=-.5, 
+        color=cube_colors[i*2]
+        )
+    e.look_at(dir, 'up')
 
     e_flipped = Entity(parent=combine_parent, model='plane', origin_y=-.5, color=cube_colors[(i*2)+1])
     e_flipped.look_at(-dir, 'up')
 
-    # e.scale = e_flipped.scale= size
+    e.scale = e_flipped.scale= size
 
 combine_parent.combine()
 
