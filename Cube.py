@@ -1,6 +1,4 @@
-from turtle import position
 from ursina import *
-import numpy as np
 
 cube_colors = [
     color.green,  # right
@@ -10,96 +8,78 @@ cube_colors = [
     color.orange,  # back
     color.red,  # front
 ]
-# сторону можно понять по нормали коллайдера
 
 
-class Game(Ursina):
+class Cube():
     def __init__(self):
-        super().__init__()
+        self.cubes = []
         self.action_trigger = True
         self.size = 1  # size of squares(width and height)
-        window.color = color._16
+        window.color = color.dark_gray
         self.camera = EditorCamera()
         self.text = Text()
-        self.sign = 1
-        self.load_game()
-
-    def load_game(self):
+        self.parent_col = Entity(visible=False)
+        self.PARENT = Entity(enabled=False)
+        
         self.create_model()
         self.create_cube()
-
         self.colliders()  # create_sensors
+        
         self.rotation_helper = Entity()
 
     def colliders(self):
         dt = 0.1
-        self.parent_col = Entity(visible=False)
         create_sensor = lambda n, p, s, c: Entity(
             parent=self.parent_col,
-            name=n,
-            model="cube",
-            position=p,
-            scale=s,
-            color=c,
-            collider="box",
+            name=n, model="cube",
+            position=p, scale=s,
+            color=c, collider="box",
             visible=False,
         )
         L = create_sensor(
-            "L",
-            (-self.size, 0, 0),
+            "L", (-self.size, 0, 0),
             (self.size, 3 * self.size + 2 * dt, 3 * self.size + 2 * dt),
             color.blue,
         )
         R = create_sensor(
-            "R",
-            (self.size, 0, 0),
+            "R", (self.size, 0, 0),
             (self.size, 3 * self.size + 2 * dt, 3 * self.size + 2 * dt),
             color.green,
         )
         F = create_sensor(
-            "F",
-            (0, 0, -self.size),
+            "F", (0, 0, -self.size),
             (3 * self.size + 2 * dt, 3 * self.size + dt, self.size),
             color.red,
         )
         BACK_F = create_sensor(
-            "B",
-            (0, 0, self.size),
+            "B", (0, 0, self.size),
             (3 * self.size + 2 * dt, 3 * self.size + dt, self.size),
             color.orange,
         )
         U = create_sensor(
-            "U",
-            (0, self.size, 0),
+            "U", (0, self.size, 0),
             (3 * self.size + dt, self.size, 3 * self.size + dt),
             color.yellow,
         )
         D = create_sensor(
-            "D",
-            (0, -self.size, 0),
+            "D", (0, -self.size, 0),
             (3 * self.size + dt, self.size, 3 * self.size + dt),
             color.white,
         )
 
     def create_model(self):
-        self.PARENT = Entity(enabled=False)
         # create cube's sides: right-left, top-down, front-back
         for i in range(3):
             dir = Vec3(0, 0, 0)
             dir[i] = 1
             e = Entity(
-                parent=self.PARENT,
-                model="plane",
-                origin_y=-0.5,
-                scale=self.size,
+                parent=self.PARENT, model="plane",
+                origin_y=-0.5, scale=self.size,
                 color=cube_colors[i * 2],
             )
-
             e_flipped = Entity(
-                parent=self.PARENT,
-                model="plane",
-                origin_y=-0.5,
-                scale=self.size,
+                parent=self.PARENT,model="plane",
+                origin_y=-0.5, scale=self.size,
                 color=cube_colors[(i * 2) + 1],
             )
             # rotating according to dir
@@ -109,7 +89,6 @@ class Game(Ursina):
         self.PARENT.combine()
 
     def create_cube(self):
-        self.cubes = []
         temp = self.size
         for x in range(0, 3 * temp, temp):
             for y in range(0, 3 * temp, temp):
@@ -122,16 +101,9 @@ class Game(Ursina):
                     self.cubes.append(e)
 
     def input(self, key):
-        print(f"ROTATION:{self.camera.rotation}")
-        super().input(key)
         if not self.action_trigger or not mouse.normal:
             return
-
         for hitinfo in mouse.collisions:
-            # TODO direction must depend on normal and key!
-            # нучно типа чекать с какой стороны мы нажали !(полярные координаты)
-            # Комманда "вверх" зависит не от нормали куда мы нажали, а от поворота камеры
-            self.text.text = f"{camera.rotation_directions}"
             if key == "mouse1":  # R, L, F, U
                 self.rotate_side(hitinfo.entity.name, mouse.normal, 1)
             elif key == "mouse3":  # R', L', F', U'
@@ -139,8 +111,7 @@ class Game(Ursina):
             break
 
     def toggle_animation_trigger(self):
-        """prohibiting side rotation during rotation animation"""
-        self.action_trigger = True
+        self.action_trigger = not self.action_trigger
 
     def get_index(self, normal):
         # gets from position the needed ax to rotate around it and the position of the needed cubes
@@ -149,41 +120,50 @@ class Game(Ursina):
         sign = ">" if a[0][1] > 0 else "<"
         return coords[a[0][0]], sign
 
-    def is_rotation_for_change_dir(self, posx, posy):
-        a = abs(round(posx, 0)) % 180
-        b = abs(round(posy, 0)) % 180
-        dt = 10
-        return a + b >= 180 - 2 * dt
+    def get_rotation_type(self, collider_scale, normal):
+        ind = [i for i, e in enumerate(normal) if e != 0]
+        rest = round(collider_scale[ind[0]] % self.size, 2)
 
-    def rotate_side(self, collider, normal, direction=1, speed=0.5):
-        self.action_trigger = False
-        if self.is_rotation_for_change_dir(camera.rotation_y, camera.rotation_x):
-            self.sign = -1
-        else:
-            self.sign = 1
+        if rest == 2 * 0.1:  # is R/L
+            return 0
+        elif rest == 0.1:  # is U/D
+            return 1
+        return 2
+
+    def get_multiplier(self, normal, collider_scale):
+        # more clever than using multipliers I couldn't invent ...
+        # first is R/L, second - D/U, third - F and obviousl R',L',...
+        arr = {
+            Vec3(0, 0, -1): [1, 1, 1],  # front
+            Vec3(0, 0, 1): [-1, 1, -1],  # back
+            Vec3(-1, 0, 0): [1, 1, -1],  # left
+            Vec3(1, 0, 0): [-1, 1, 1],  # right
+            Vec3(0, 1, 0): [1, 1, 1],  # top
+            Vec3(0, -1, 0): [1, 1, -1],  # down
+        }
+        multipliers = arr[normal]
+
+        return multipliers[self.get_rotation_type(collider_scale, normal)]
+
+    def rotate_side(self, collider, normal, direction, speed=0.5):
+        self.toggle_animation_trigger()
 
         # gets the needed ax to rotate around from clicked collider
         for i in self.parent_col.children:
             if i.name == collider:
                 coord, sign = self.get_index(i.position)
-                # TODO pass direction and handle it
-                # TODO change colliders' shapes on_click on every new side
-        eval(
-            f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
-            {"self": self},
-        )
-        eval(
-            f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction} * {self.sign}, duration={speed})"
-        )
+                scale = i.scale
+                break
 
-        invoke(self.reset_rotation_helper, delay=speed + 0.11)
+        multiplier = self.get_multiplier(normal, scale)
+        # reparent to self.rotation_helper
+        eval(f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
+            {"self": self})
+        eval(f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction}*{multiplier}, duration=speed)")
+
+        invoke(self.reparent_to_scene, delay=speed + 0.11)
         invoke(self.toggle_animation_trigger, delay=speed + 0.11)
 
-    def reset_rotation_helper(self):
+    def reparent_to_scene(self):
         [setattr(e, "world_parent", scene) for e in self.cubes]
         self.rotation_helper.rotation = (0, 0, 0)
-
-
-if __name__ == "__main__":
-    game = Game()
-    game.run()
