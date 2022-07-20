@@ -11,23 +11,19 @@ cube_colors = [
 
 
 class Cube():
-    def __init__(self):
+    def __init__(self, size=1):
+        self.size = size  # size of squares(width and height)
+
         self.cubes = []
-        self.action_trigger = True
-        self.size = 1  # size of squares(width and height)
-        window.color = color.dark_gray
-        self.camera = EditorCamera()
-        self.text = Text()
-        self.parent_col = Entity(visible=False)
-        self.PARENT = Entity(enabled=False)
-        
+        self.parent_col = Entity(add_to_scene_entities=False)
+        self.PARENT = Entity(add_to_scene_entities=False)
+        self.rotation_helper = Entity(add_to_scene_entities=False)
+
         self.create_model()
         self.create_cube()
-        self.colliders()  # create_sensors
-        
-        self.rotation_helper = Entity()
+        self.create_sensors()  # create_sensors
 
-    def colliders(self):
+    def create_sensors(self):
         dt = 0.1
         create_sensor = lambda n, p, s, c: Entity(
             parent=self.parent_col,
@@ -78,7 +74,7 @@ class Cube():
                 color=cube_colors[i * 2],
             )
             e_flipped = Entity(
-                parent=self.PARENT,model="plane",
+                parent=self.PARENT, model="plane",
                 origin_y=-0.5, scale=self.size,
                 color=cube_colors[(i * 2) + 1],
             )
@@ -100,24 +96,12 @@ class Cube():
                     )
                     self.cubes.append(e)
 
-    def input(self, key):
-        if not self.action_trigger or not mouse.normal:
-            return
-        for hitinfo in mouse.collisions:
-            if key == "mouse1":  # R, L, F, U
-                self.rotate_side(hitinfo.entity.name, mouse.normal, 1)
-            elif key == "mouse3":  # R', L', F', U'
-                self.rotate_side(hitinfo.entity.name, mouse.normal, -1)
-            break
-
-    def toggle_animation_trigger(self):
-        self.action_trigger = not self.action_trigger
-
-    def get_index(self, normal):
+    def get_cubes_location(self, normal):
         # gets from position the needed ax to rotate around it and the position of the needed cubes
         coords = ["x", "y", "z"]
         a = [(i, int(e)) for i, e in enumerate(normal) if e != 0]
         sign = ">" if a[0][1] > 0 else "<"
+
         return coords[a[0][0]], sign
 
     def get_rotation_type(self, collider_scale, normal):
@@ -131,7 +115,7 @@ class Cube():
         return 2
 
     def get_multiplier(self, normal, collider_scale):
-        # more clever than using multipliers I couldn't invent ...
+        # more clever than using multipliers dict I couldn't invent ...
         # first is R/L, second - D/U, third - F and obviousl R',L',...
         arr = {
             Vec3(0, 0, -1): [1, 1, 1],  # front
@@ -146,23 +130,19 @@ class Cube():
         return multipliers[self.get_rotation_type(collider_scale, normal)]
 
     def rotate_side(self, collider, normal, direction, speed=0.5):
-        self.toggle_animation_trigger()
-
-        # gets the needed ax to rotate around from clicked collider
+        # get info about clicked collider
         for i in self.parent_col.children:
             if i.name == collider:
-                coord, sign = self.get_index(i.position)
+                coord, sign = self.get_cubes_location(i.position)
                 scale = i.scale
                 break
 
         multiplier = self.get_multiplier(normal, scale)
-        # reparent to self.rotation_helper
         eval(f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
-            {"self": self})
+             {"self": self})  # reparent to self.rotation_helper
         eval(f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction}*{multiplier}, duration=speed)")
 
         invoke(self.reparent_to_scene, delay=speed + 0.11)
-        invoke(self.toggle_animation_trigger, delay=speed + 0.11)
 
     def reparent_to_scene(self):
         [setattr(e, "world_parent", scene) for e in self.cubes]

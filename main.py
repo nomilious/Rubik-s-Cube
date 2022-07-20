@@ -1,5 +1,5 @@
-import graphics
+import game
 
 if __name__ == '__main__':
-    game = graphics.Game()
+    game = game.Game()
     game.run()
