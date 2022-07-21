@@ -1,6 +1,6 @@
 from ursina import *
-from Cube import Cube
-from annotation import Annotation
+from src.graphics import Cube
+from src.annotation import Annotation
 
 
 # TODO add history of moves

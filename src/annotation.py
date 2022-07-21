@@ -9,6 +9,7 @@ def print_face(what):
             print()
     print()
 
+
 # FIXME add rot_clockwise for the rotatted side
 class Annotation:
     def __init__(self):
@@ -39,17 +40,17 @@ class Annotation:
     def get_sides_by_rotation(self, rot):
         match rot:
             case "R":
-                return 'right','front', 'down', 'back', 'up', "[:,-1]", "[:,-1]", "[:,0]", "[:,-1]"
+                return 'right', 'front', 'down', 'back', 'up', "[:,-1]", "[:,-1]", "[:,0]", "[:,-1]"
             case "L":
-                return 'left','front', 'down', 'back', 'up', "[:,0]", "[:,0]", "[:,-1]", "[:,0]"
+                return 'left', 'front', 'down', 'back', 'up', "[:,0]", "[:,0]", "[:,-1]", "[:,0]"
             case "U":
-                return 'up','front', 'right', 'back', 'left', "[0,:]", "[0,:]", "[0,:]", "[0,:]"
+                return 'up', 'front', 'right', 'back', 'left', "[0,:]", "[0,:]", "[0,:]", "[0,:]"
             case "D":
-                return 'down','front', 'right', 'back', 'left', "[-1,:]", "[-1,:]", "[-1,:]", "[-1,:]"
+                return 'down', 'front', 'right', 'back', 'left', "[-1,:]", "[-1,:]", "[-1,:]", "[-1,:]"
             case "F":
-                return 'front','left', 'down', 'right', 'up', "[:,-1]", "[0,:]", "[:,0]", "[-1,:]"
+                return 'front', 'left', 'down', 'right', 'up', "[:,-1]", "[0,:]", "[:,0]", "[-1,:]"
             case "B":
-                return 'back',"right", "down", "left", "up", "[:,-1]", "[-1,:]", "[:,0]", "[0,:]"
+                return 'back', "right", "down", "left", "up", "[:,-1]", "[-1,:]", "[:,0]", "[0,:]"
 
     def print_cube(self):
         print_face(self.up)
