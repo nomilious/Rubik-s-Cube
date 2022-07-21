@@ -11,7 +11,7 @@ cube_colors = [
 
 
 class Cube():
-    def __init__(self, size=1):
+    def __init__(self, size = 1):
         self.size = size  # size of squares(width and height)
 
         self.cubes = []
@@ -119,17 +119,17 @@ class Cube():
         # first is R/L, second - D/U, third - F and obviousl R',L',...
         arr = {
             Vec3(0, 0, -1): [1, 1, 1],  # front
-            Vec3(0, 0, 1): [-1, 1, -1],  # back
+            Vec3(0, 0, 1) : [-1, 1, -1],  # back
             Vec3(-1, 0, 0): [1, 1, -1],  # left
-            Vec3(1, 0, 0): [-1, 1, 1],  # right
-            Vec3(0, 1, 0): [1, 1, 1],  # top
+            Vec3(1, 0, 0) : [-1, 1, 1],  # right
+            Vec3(0, 1, 0) : [1, 1, 1],  # top
             Vec3(0, -1, 0): [1, 1, -1],  # down
         }
         multipliers = arr[normal]
 
         return multipliers[self.get_rotation_type(collider_scale, normal)]
 
-    def rotate_side(self, collider, normal, direction, speed=0.5):
+    def rotate(self, collider, normal, direction, speed = 0.5):
         # get info about clicked collider
         for i in self.parent_col.children:
             if i.name == collider:
@@ -138,9 +138,13 @@ class Cube():
                 break
 
         multiplier = self.get_multiplier(normal, scale)
-        eval(f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
-             {"self": self})  # reparent to self.rotation_helper
-        eval(f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction}*{multiplier}, duration=speed)")
+        eval(
+            f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
+            {"self": self}
+        )  # reparent to self.rotation_helper
+        eval(
+            f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction}*{multiplier}, duration=speed)"
+        )
 
         invoke(self.reparent_to_scene, delay=speed + 0.11)
 
