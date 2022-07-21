@@ -1,2 +1,2 @@
-ursina
-numpy
+ursina==5.0.0
+numpy==1.23.1
