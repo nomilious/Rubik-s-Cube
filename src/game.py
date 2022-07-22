@@ -1,13 +1,38 @@
 from ursina import *
-from src.graphics import Cube
+
 from src.annotation import Annotation
+from src.graphics import Cube
+
+
+def get_rotation_type(collider_scale, normal):
+    ind = [i for i, e in enumerate(normal) if e != 0]
+    rest = round(collider_scale[ind[0]] % 1, 2)
+
+    if rest == 2 * Cube.dt:  # is R/L
+        return 0
+    elif rest == Cube.dt:  # is U/D
+        return 1
+    return 2
+
+
+def get_multiplier(normal, collider_scale):
+    # more clever than using multipliers dict I couldn't invent ...
+    # first is R/L, second - D/U, third - F and obviousl R',L',...
+    arr = {
+        Vec3(0, 0, -1): [1, 1, 1],  # front
+        Vec3(0, 0, 1) : [-1, 1, -1],  # back
+        Vec3(-1, 0, 0): [1, 1, -1],  # left
+        Vec3(1, 0, 0) : [-1, 1, 1],  # right
+        Vec3(0, 1, 0) : [1, 1, 1],  # top
+        Vec3(0, -1, 0): [1, 1, -1],  # down
+    }
+    multipliers = arr[normal]
+
+    return multipliers[get_rotation_type(collider_scale, normal)]
 
 
 # TODO add history of moves
 # TODO develop the right and left algorithm
-# TODO array of squares' possition
-# TODO высчитывать "direction" в self.input() и переправлять на Annotation
-
 class Game(Ursina):
     def __init__(self):
         super().__init__()
@@ -17,26 +42,25 @@ class Game(Ursina):
         self.cube = Cube(1)
         self.action_trigger = True
 
+    # IDEA to recreate ALL colliders on_normalChange()
     def input(self, key):
-        # FIXME doesn't work properly for direction = -1
-        # FIXME doesn't work properly for direction = 1 - B white-blue
         super().input(key)
         if not self.action_trigger or not mouse.normal:
-            self.analitic.print_cube()
             return
+
         self.toggle_animation_trigger()
 
         for hitinfo in mouse.collisions:
+            direction = get_multiplier(mouse.normal, hitinfo.entity.scale)
             if key in ["mouse1", "mouse1 up", "double click"]:  # R, L, F, U
-                self.cube.rotate(hitinfo.entity.name, mouse.normal, 1)
-                self.analitic.rotate_r(hitinfo.entity.name, 1)
-                break
+                self.cube.rotate(hitinfo.entity.position, direction)
+                self.analitic.rotate_r(hitinfo.entity.name, direction)
             elif key in ["mouse3", "mouse3 up"]:  # R', L', F', U'
-                self.cube.rotate(hitinfo.entity.name, mouse.normal, -1)
-                self.analitic.rotate_r(hitinfo.entity.name, -1)
-                break
-            elif key == "w":
-                self.analitic.print_cube()
+                direction *= -1
+                self.cube.rotate(hitinfo.entity.position, direction)
+                self.analitic.rotate_r(hitinfo.entity.name, direction)
+            self.analitic.print_cube()
+            break
 
         invoke(self.toggle_animation_trigger, delay=0.5 + 0.11)
 
