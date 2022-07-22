@@ -9,8 +9,20 @@ cube_colors = [
     color.red,  # front
 ]
 
+def get_cubes_location(normal):
+    # gets from position the needed ax to rotate around it and the position of the needed cubes
+    coords = ["x", "y", "z"]
+    a = [(i, int(e)) for i, e in enumerate(normal) if e != 0]
+    sign = ">" if a[0][1] > 0 else "<"
 
-class Cube():
+    return coords[a[0][0]], sign
+
+
+# TODO add constructor for Annotation()
+# TODO add 3 buttons: shuffle and solve basic(maybe more- solve cross, 1st side, ....), solve master(OLL,...)
+class Cube:
+    dt = 0.1
+
     def __init__(self, size = 1):
         self.size = size  # size of squares(width and height)
 
@@ -24,42 +36,41 @@ class Cube():
         self.create_sensors()  # create_sensors
 
     def create_sensors(self):
-        dt = 0.1
-        create_sensor = lambda n, p, s, c: Entity(
+        new_sensor = lambda n, p, s, c, vis = False: Entity(
             parent=self.parent_col,
-            name=n, model="cube",
+            name=n, model="cube", texture="white_cube",
             position=p, scale=s,
             color=c, collider="box",
-            visible=False,
+            visible=vis,
         )
-        L = create_sensor(
+        new_sensor(
             "L", (-self.size, 0, 0),
-            (self.size, 3 * self.size + 2 * dt, 3 * self.size + 2 * dt),
-            color.blue,
+            (self.size, 3 * self.size + 2 * Cube.dt, 3 * self.size + 2 * Cube.dt),
+            color.blue
         )
-        R = create_sensor(
+        new_sensor(
             "R", (self.size, 0, 0),
-            (self.size, 3 * self.size + 2 * dt, 3 * self.size + 2 * dt),
+            (self.size, 3 * self.size + 2 * Cube.dt, 3 * self.size + 2 * Cube.dt),
             color.green,
         )
-        F = create_sensor(
+        new_sensor(
             "F", (0, 0, -self.size),
-            (3 * self.size + 2 * dt, 3 * self.size + dt, self.size),
+            (3 * self.size + 2 * Cube.dt, 3 * self.size + Cube.dt, self.size),
             color.red,
         )
-        BACK_F = create_sensor(
+        new_sensor(
             "B", (0, 0, self.size),
-            (3 * self.size + 2 * dt, 3 * self.size + dt, self.size),
+            (3 * self.size + 2 * Cube.dt, 3 * self.size + Cube.dt, self.size),
             color.orange,
         )
-        U = create_sensor(
+        new_sensor(
             "U", (0, self.size, 0),
-            (3 * self.size + dt, self.size, 3 * self.size + dt),
+            (3 * self.size + Cube.dt, self.size, 3 * self.size + Cube.dt),
             color.yellow,
         )
-        D = create_sensor(
+        new_sensor(
             "D", (0, -self.size, 0),
-            (3 * self.size + dt, self.size, 3 * self.size + dt),
+            (3 * self.size + Cube.dt, self.size, 3 * self.size + Cube.dt),
             color.white,
         )
 
@@ -96,55 +107,15 @@ class Cube():
                     )
                     self.cubes.append(e)
 
-    def get_cubes_location(self, normal):
-        # gets from position the needed ax to rotate around it and the position of the needed cubes
-        coords = ["x", "y", "z"]
-        a = [(i, int(e)) for i, e in enumerate(normal) if e != 0]
-        sign = ">" if a[0][1] > 0 else "<"
-
-        return coords[a[0][0]], sign
-
-    def get_rotation_type(self, collider_scale, normal):
-        ind = [i for i, e in enumerate(normal) if e != 0]
-        rest = round(collider_scale[ind[0]] % self.size, 2)
-
-        if rest == 2 * 0.1:  # is R/L
-            return 0
-        elif rest == 0.1:  # is U/D
-            return 1
-        return 2
-
-    def get_multiplier(self, normal, collider_scale):
-        # more clever than using multipliers dict I couldn't invent ...
-        # first is R/L, second - D/U, third - F and obviousl R',L',...
-        arr = {
-            Vec3(0, 0, -1): [1, 1, 1],  # front
-            Vec3(0, 0, 1) : [-1, 1, -1],  # back
-            Vec3(-1, 0, 0): [1, 1, -1],  # left
-            Vec3(1, 0, 0) : [-1, 1, 1],  # right
-            Vec3(0, 1, 0) : [1, 1, 1],  # top
-            Vec3(0, -1, 0): [1, 1, -1],  # down
-        }
-        multipliers = arr[normal]
-
-        return multipliers[self.get_rotation_type(collider_scale, normal)]
-
-    def rotate(self, collider, normal, direction, speed = 0.5):
+    def rotate(self, collider_pos, direction, speed = 0.5):
         # get info about clicked collider
-        for i in self.parent_col.children:
-            if i.name == collider:
-                coord, sign = self.get_cubes_location(i.position)
-                scale = i.scale
-                break
+        coord, sign = get_cubes_location(collider_pos)
 
-        multiplier = self.get_multiplier(normal, scale)
         eval(
             f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
             {"self": self}
         )  # reparent to self.rotation_helper
-        eval(
-            f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction}*{multiplier}, duration=speed)"
-        )
+        eval(f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction}, duration=speed)")
 
         invoke(self.reparent_to_scene, delay=speed + 0.11)
 
