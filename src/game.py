@@ -31,6 +31,34 @@ def get_multiplier(normal, collider_scale):
     return multipliers[get_rotation_type(collider_scale, normal)]
 
 
+
+def get_rotation_type(collider_scale, normal):
+    ind = [i for i, e in enumerate(normal) if e != 0]
+    rest = round(collider_scale[ind[0]] % 1, 2)
+
+    if rest == 2 * Cube.dt:  # is R/L
+        return 0
+    elif rest == Cube.dt:  # is U/D
+        return 1
+    return 2
+
+
+def get_multiplier(normal, collider_scale):
+    # more clever than using multipliers dict I couldn't invent ...
+    # first is R/L, second - D/U, third - F and obviousl R',L',...
+    arr = {
+        Vec3(0, 0, -1): [1, 1, 1],  # front
+        Vec3(0, 0, 1) : [-1, 1, -1],  # back
+        Vec3(-1, 0, 0): [1, 1, -1],  # left
+        Vec3(1, 0, 0) : [-1, 1, 1],  # right
+        Vec3(0, 1, 0) : [1, 1, 1],  # top
+        Vec3(0, -1, 0): [1, 1, -1],  # down
+    }
+    multipliers = arr[normal]
+
+    return multipliers[get_rotation_type(collider_scale, normal)]
+
+
 # TODO add history of moves
 # TODO develop the right and left algorithm
 class Game(Ursina):
