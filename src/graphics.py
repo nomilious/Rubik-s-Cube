@@ -19,6 +19,8 @@ def get_cubes_location(normal):
     return coords[a[0][0]], sign
 
 
+# comm
+
 # TODO add constructor for Annotation()
 # TODO add 3 buttons: shuffle and solve basic(maybe more- solve cross, 1st side, ....), solve master(OLL,...)
 class Cube:
