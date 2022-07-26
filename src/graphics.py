@@ -19,9 +19,7 @@ def get_cubes_location(normal):
     return coords[a[0][0]], sign
 
 
-# comm
-
-# TODO add constructor for Annotation()
+# TODO add constructor Cube(annotation)
 # TODO add 3 buttons: shuffle and solve basic(maybe more- solve cross, 1st side, ....), solve master(OLL,...)
 class Cube:
     dt = 0.1
@@ -86,6 +84,7 @@ class Cube:
                 parent=self.PARENT, model="plane",
                 origin_y=-0.5, scale=self.size,
                 color=cube_colors[i * 2],
+
             )
             e_flipped = Entity(
                 parent=self.PARENT, model="plane",
@@ -110,9 +109,12 @@ class Cube:
                     )
                     self.cubes.append(e)
 
-    def rotate(self, collider_pos, direction, speed = 0.5):
+    def rotate(self, collider, direction, speed = 0.5):
         # get info about clicked collider
-        coord, sign = get_cubes_location(collider_pos)
+        for i in self.parent_col.children:
+            if i.name == collider:
+                coord, sign = get_cubes_location(i.position)
+                break
 
         eval(
             f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
