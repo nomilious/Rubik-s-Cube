@@ -70,6 +70,7 @@ class Game(Ursina):
             direction = 1
 
         self.movement(move, direction)
+    # implement right algorithm for rubik's cube
 
     def redo(self):
         if self.history_pos == len(self.Moves):
