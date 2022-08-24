@@ -2,8 +2,8 @@ from ursina import *
 from src.annotation import Annotation
 from src.graphics import Cube
 import numpy as np
+from src.analitic_gui import *
 from random import randint
-import time
 
 
 def get_rotation_type(normal, collider_scale):
@@ -17,7 +17,7 @@ def get_rotation_type(normal, collider_scale):
     return 2  # is F
 
 
-# BAG of rotation if U/D for UP
+# IDEA maybe this multiplier type to DELETE because of Cntrl+z BAG of rotation if U/D for UP
 def get_multiplier(normal, collider_scale):
     # additional multilier for rotating our cube, it's needed 'cause of its structure
     """"
@@ -44,7 +44,7 @@ def get_multiplier(normal, collider_scale):
 class Game(Ursina):
     def __init__(self):
         super().__init__()
-        self.Moves = np.array([])
+        self.hist = np.array([])
         self.history_pos = 0
 
         window.color = color.dark_gray
@@ -55,29 +55,32 @@ class Game(Ursina):
         self.camera = EditorCamera()
         self.analitic = Annotation()
         self.cube = Cube(1)
+        # self.solve = Solve(self.analitic)
         self.action_trigger = True
-        self.legal_moves = {'undo': "z up", "redo": "y up", 'next': "mouse1", 'back': 'mouse3'}
+        self.legal_hist = {'undo': "z up", "redo": "y up", 'next': "mouse1", 'back': 'mouse3'}
 
+    # TODO implement key == 'h' for help panel with all possible move and other info
     def undo(self):
         if self.history_pos == 0:
             return self.toggle_animation_trigger()  # action_trigger is True again
 
         self.history_pos -= 1
-        move = self.Moves[self.history_pos]
+        move = self.hist[self.history_pos]
         direction = -1
         if move[-1] == '`':
             move = move[:1]
             direction = 1
 
         self.movement(move, direction)
+
     # implement right algorithm for rubik's cube
 
     def redo(self):
-        if self.history_pos == len(self.Moves):
+        if self.history_pos == len(self.hist):
             return self.toggle_animation_trigger()
 
         self.history_pos += 1
-        move = self.Moves[self.history_pos - 1]
+        move = self.hist[self.history_pos - 1]
         direction = 1
         if move[-1] == '`':
             move = move[:1]
@@ -85,19 +88,19 @@ class Game(Ursina):
 
         self.movement(move, direction)
 
-    def movement(self, move, direction):
-        self.cube.rotate(move, direction)
-        self.analitic.rotate_r(move, direction)
+    def movement(self, move: Move):
+        self.cube.rotate(move.face, move.direction)
+        self.analitic.rotate_r(move.face, move.direction)
         # self.analitic.print_cube()
-        print(self.Moves[:self.history_pos])  # output the histiry taking into account all the undos
+        print(self.hist[:self.history_pos])  # output the histiry taking into account all the undos
 
         invoke(self.toggle_animation_trigger, delay=0.6 + 0.11)  # we should wait for self.cube.reparent_to_scene()
 
     # def shuffle(self):
     #     times = randint(1, 200)
-    #     moves = np.array(["R", "L", "U", "D", "F", "B"])
+    #     hist = np.array(["R", "L", "U", "D", "F", "B"])
     #     for i in range(10):
-    #         move = np.random.choice(moves)
+    #         move = np.random.choice(hist)
     #         dir = np.random.choice([1, -1])
     #         self.append_hist(move, dir)
     #         self.cube.rotate(move, dir, 0.2)
@@ -111,37 +114,46 @@ class Game(Ursina):
         # action_trigger stops reading input for some milisec
         if not self.action_trigger:
             return
-        elif (not mouse.normal or mouse.normal == Vec3(0, 0, 0)) and key not in [self.legal_moves['undo'], \
-                                                                                 self.legal_moves['redo']]:
+        elif (not mouse.normal or mouse.normal == Vec3(0, 0, 0)) and key not in [self.legal_hist['undo'], \
+                                                                                 self.legal_hist['redo']]:
             return
         self.toggle_animation_trigger()  # stop reading input
         ctrl = 'control'
         # handle input
-        if held_keys[ctrl] and key == self.legal_moves['undo']:  # bigger priority
+        if held_keys[ctrl] and key == self.legal_hist['undo']:  # bigger priority
             return self.undo()
-        elif held_keys[ctrl] and key == self.legal_moves['redo']:  # bigger priority
+        elif held_keys[ctrl] and key == self.legal_hist['redo']:  # bigger priority
             return self.redo()
-        elif key == self.legal_moves['next']:  # R, L, F, U, ...
+        elif key == self.legal_hist['next']:  # R, L, F, U, ...
             hitinfo = mouse.collisions[0]  # get first collision, it's the most priority
             direction = get_multiplier(mouse.normal, hitinfo.entity.scale)
-        elif key == self.legal_moves['back']:  # R', L', F', U', ...
+        elif key == self.legal_hist['back']:  # R', L', F', U', ...
             hitinfo = mouse.collisions[0]  # get first collision, it's the most priority
             direction = -1 * get_multiplier(mouse.normal, hitinfo.entity.scale)
         else:  # quit method
             return self.toggle_animation_trigger()
 
+        move = Move(hitinfo.entity.name, direction)
+
         # log the move
-        self.append_hist(hitinfo.entity.name, direction)
+        self.append_hist(move)
         # do the move
-        self.movement(hitinfo.entity.name, direction)
+        self.movement(move)
+
+        invoke(self.ab, delay=0.7 + 0.11)  # we should wait for
+        # self.cube.reparent_to_scene()
+
+    def ab(self):
+        a = [e for e in self.cube.cubes if e.x > 0]
+        print(a[1].position, a[1].rotation)
 
     def append_hist(self, name, direction):
         # cancel redo and change the "history"
-        if self.history_pos < len(self.Moves):
-            self.Moves = self.Moves[:self.history_pos]
+        if self.history_pos < len(self.hist):
+            self.hist = self.hist[:self.history_pos]
 
         sign = '' if direction == 1 else '`'
-        self.Moves = np.append(self.Moves, [name + sign])
+        self.hist = np.append(self.hist, [name + sign])
         self.history_pos += 1
 
     def toggle_animation_trigger(self):

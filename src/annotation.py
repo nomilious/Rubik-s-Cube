@@ -1,120 +1,111 @@
 import numpy as np
 import copy
-
-
-# IDEA interpret self.back in other way: kind a interpret it as looking in inside this side ? maybe
-def get_sides_by_rotation(rot):
-    """! relative to self.front
-    if R
-        down[0,1,2] = back[6,3,0]
-        front[2,5,8]= down[0,1,2]
-        up[8,7,6] = front[2,5,8]
-        back[6,3,0] = up[8,7,6]
-    if L
-        front[0,3,6]= down[6,7,8]
-        down[6,7,8] = back[8,5,2]
-        up[2,1,0] = front[0,3,6]
-        back[8,5,2] = up[2,1,0]
-    if F
-        left[2,5,8] = down[6,3,0]
-        up[6,3,0] = left[2,5,8]
-        right[6,3,0] = up[6,3,0]
-        down[6,3,0] = right[6,3,0]
-    """
-    match rot:
-        case "R":
-            return 'right', ['front[:,-1]', 'up[-1,:][::-1]', 'back[:,0][::-1]', 'down[0,:]']
-        case "L":
-            return 'left', ['front[:,0]', 'up[0,:][::-1]', 'back[:,-1][::-1]', 'down[-1,:]']
-        case "U":
-            return 'up', ['front[0,:]', 'left[0,:]', 'back[0,:]', 'right[0,:]']
-        case "D":
-            return 'down', ['front[-1,:]', 'left[-1,:]', 'back[-1,:]', 'right[-1,:]']
-        case "F":
-            return 'front', ['left[:,-1]', 'up[:,0][::-1]', 'right[:,0][::-1]', 'down[:,0][::-1]']
-        case "B":
-            return 'back', ['left[:,0]', 'up[:,-1][::-1]', 'right[:,-1][::-1]', 'down[:,-1][::-1]']
+from src.analitic_gui import *
 
 
 # TODO add self.Moves to Annotation
 class Annotation:
-    def __init__(self):
+    def __init__(self, *args):
         sides = ['down', 'front', 'up', 'left', 'right', 'back']
-        val = ["W", "R", "Y", "B", "G", "O"]
-        for i in range(len(sides)):
-            exec(f"self.{sides[i]} = np.array([[val[i]] * 9]).reshape((-1, 3))")
+        if not args:
+            val = ["W", "R", "Y", "B", "G", "O"]
+            for i, side in enumerate(sides):
+                setattr(self, side, np.array([[val[i]] * 9]).reshape((-1, 3)))
+                # exec(f"self.{side} = np.array([[val[i]] * 9]).reshape((-1, 3))")
+        else:
+            assert len(args) == 6, "Annotation must have 6 sides"
+            for i in range(6):
+                assert len(args[i]) == 9, f"Each side must have 9 elements, error on side {i} "
+            all_arr = np.concatenate((args[0], args[1], args[2], args[3], args[4], args[5])).tolist()
 
-    def rotate_r(self, collider, direction = 1):
-        main, arr = get_sides_by_rotation(collider)
-        flipped = ['down', 'back', 'left']
+            check_frequency = lambda arr: all(arr.count(x) == 9 for x in arr)
+            assert check_frequency(all_arr), "All sides must have different colors"
+            for i, side_ in enumerate(sides):
+                setattr(self, side_, np.array(args[i]).reshape((-1, 3)))
 
-        arr = arr[::-direction]
-        arr1 = arr[1:] + arr[:1]
+    def new_rotate_r(self, move: Move):
+        face_rotation_natural = ['L', 'B', 'D']
 
-        direction *= -1 if main in flipped else 1
-        exec(f"self.{main} = np.rot90(self.{main}, {-direction})")
-        # I'm using temp because the value of first element will be changed when I want to assign it to the last one
-        exec(f"temp =copy.deepcopy(self.{arr[0]})")
+        self.adjacent_rotate(move)
+        if move.face not in face_rotation_natural:
+            move.direction *= -1
+        self.face_rotate(move)
 
-        for i in range(4 - 1):
-            exec(f"self.{arr[i]} = self.{arr1[i]}")
-        exec(f"self.{arr[3]}= temp")
+    def adjacent_rotate(self, move: Move):
+        match move.face:
+            case 'F':
+                lst = [copy.deepcopy(self.up[-1, :]), copy.deepcopy(self.left[:, -1][::-1]),
+                       copy.deepcopy(self.down[0, :][::-1]),
+                       copy.deepcopy(self.right[:, 0])]
+                lst = lst[move.direction:] + lst[:move.direction]
+
+                self.up[-1, :] = lst[0]
+                self.left[:, -1][::-1] = lst[1]
+                self.down[0, :][::-1] = lst[2]
+                self.right[:, 0] = lst[3]
+            case 'U':
+                lst = [copy.deepcopy(self.back[0, :]), copy.deepcopy(self.left[0, :]), copy.deepcopy(self.front[0, :]),
+                       copy.deepcopy(self.right[0, :])]
+                lst = lst[move.direction:] + lst[:move.direction]
+
+                self.back[0, :], self.left[0, :], self.front[0, :], self.right[0, :] = lst
+            case "D":
+                lst = [copy.deepcopy(self.back[-1, :]), copy.deepcopy(self.left[-1, :]),
+                       copy.deepcopy(self.front[-1, :]),
+                       copy.deepcopy(self.right[-1, :])]
+                lst = lst[move.direction:] + lst[:move.direction]
+
+                self.back[-1, :], self.left[-1, :], self.front[-1, :], self.right[-1, :] = lst
+            case 'R':
+                self.y_rotate()
+                self.adjacent_rotate(Move('F', move.direction))
+                self.y_rotate(3)
+            case 'L':
+                self.y_rotate(3)
+                self.adjacent_rotate(Move('F', -move.direction))
+                self.y_rotate()
+            case 'B':
+                self.y_rotate(2)
+                self.adjacent_rotate(Move('F', -move.direction))
+                self.y_rotate(2)
+
+    def face_rotate(self, move: Move):
+        new_arr = np.rot90(getattr(self, move_to_face[move.face]), move.direction)
+        setattr(self, move_to_face[move.face], new_arr)
+
+    def y_rotate(self, times: int = 1):
+        for _ in range(times):
+            lst = [copy.deepcopy(self.front), copy.deepcopy(self.left), copy.deepcopy(self.back),
+                   copy.deepcopy(self.right)]
+            lst = lst[-1:] + lst[:-1]
+            self.front, self.left, self.back, self.right = lst
+            self.face_rotate(Move('D', 1))
+            for _ in range(3):
+                self.face_rotate(Move('U', 1))
+
+    def do_moves(self, moves: [str]) -> object:
+        for move_name in moves:
+            move = Move(move_name)
+            self.new_rotate_r(move)
 
     def print_cube(self):
-        """
-         taking into account the direction of growing of each side, the representation of array is:
-         *                 ------------
-         *                 | Y8 Y7 Y6 |
-         *                 | Y5 Y4 Y3 |
-         *                 | Y2 Y1 Y0 |
-         *                 ------------
-         *   ------------  ------------  ------------  ------------
-         *   | O0 O1 O2 |  | B0 B1 B2 |  | R0 R1 O2 |  | G0 G1 G2 |
-         *   | O3 O4 O5 |  | B3 B4 B5 |  | R3 R4 O5 |  | G3 G4 G5 |
-         *   | O6 O7 O8 |  | B6 B7 B8 |  | R6 R7 O8 |  | G6 G7 G8 |
-         *   ------------  ------------  ------------  ------------
-         *                 ------------
-         *                 | W8 W7 W6 |
-         *                 | W5 W4 W3 |
-         *                 | W2 W1 W0 |
-         *                 ------------
-        , AND with rot90 we make them by outputting as shown bellow to functionally be as shown above
-         *                 ------------
-         *                 | Y0 Y1 Y2 |
-         *                 | Y3 Y4 Y5 |
-         *                 | Y6 Y7 Y8 |
-         *                 ------------
-         *   ------------  ------------  ------------  ------------
-         *   | O0 O1 O2 |  | B0 B1 B2 |  | R0 R1 O2 |  | G0 G1 G2 |
-         *   | O3 O4 O5 |  | B3 B4 B5 |  | R3 R4 O5 |  | G3 G4 G5 |
-         *   | O6 O7 O8 |  | B6 B7 B8 |  | R6 R7 O8 |  | G6 G7 G8 |
-         *   ------------  ------------  ------------  ------------
-         *                 ------------
-         *                 | W0 W1 W2 |
-         *                 | W3 W4 W5 |
-         *                 | W6 W7 W8 |
-         *                 ------------
-        """
-
-        first = np.rot90(self.up, 2)
-        last = np.rot90(self.down, 2)
         for i in range(9):
             if i % 3 == 0:
                 print("\n", end="\t\t\t")
-            print(first[i // 3][i % 3], end='  ')
-        print()
-        print()
+            print(self.up[i // 3][i % 3], end='  ')
+        print("\n")
 
-        sides = ['back', 'left', 'front', 'right']
+        sides = ['left', 'front', 'right', 'back']
         for i in range(3):
             for side in sides:
                 for j in range(3):
-                    exec(f"print(self.{side}[i][j], end='  ')")
+                    value = getattr(self, side)[i][j]
+                    print(value, end='  ')
                 print("", end="\t")
             print()
 
         for i in range(9):
             if i % 3 == 0:
                 print("\n", end="\t\t\t")
-            print(last[i // 3][i % 3], end='  ')
+            print(self.down[i // 3][i % 3], end='  ')
         print()

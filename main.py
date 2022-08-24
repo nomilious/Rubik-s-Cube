@@ -6,4 +6,4 @@ if __name__ == '__main__':
     graphics.Cube.dt = 0.02
 
     game = game.Game()
-    game.run()
+    game.run()  # BAG when I click on the cube

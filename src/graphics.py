@@ -10,6 +10,7 @@ cube_colors = [
 ]
 
 
+# MAYBE BAG maybe this func is useless and I had to  leave everything rotating as usual without all these coeff
 def get_cubes_location(normal):
     # gets from position the needed ax to rotate around it and the position of the needed cubes
     coords = ["x", "y", "z"]
