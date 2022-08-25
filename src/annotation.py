@@ -1,6 +1,6 @@
 import numpy as np
 import copy
-from src.analitic_gui import *
+from src.myMath import *
 
 
 # TODO add self.Moves to Annotation
@@ -11,7 +11,6 @@ class Annotation:
             val = ["W", "R", "Y", "B", "G", "O"]
             for i, side in enumerate(sides):
                 setattr(self, side, np.array([[val[i]] * 9]).reshape((-1, 3)))
-                # exec(f"self.{side} = np.array([[val[i]] * 9]).reshape((-1, 3))")
         else:
             assert len(args) == 6, "Annotation must have 6 sides"
             for i in range(6):
@@ -23,7 +22,7 @@ class Annotation:
             for i, side_ in enumerate(sides):
                 setattr(self, side_, np.array(args[i]).reshape((-1, 3)))
 
-    def new_rotate_r(self, move: Move):
+    def rotate(self, move: Move):
         face_rotation_natural = ['L', 'B', 'D']
 
         self.adjacent_rotate(move)
@@ -83,10 +82,10 @@ class Annotation:
             for _ in range(3):
                 self.face_rotate(Move('U', 1))
 
-    def do_moves(self, moves: [str]) -> object:
+    def do_moves(self, moves: [str]):
         for move_name in moves:
             move = Move(move_name)
-            self.new_rotate_r(move)
+            self.rotate(move)
 
     def print_cube(self):
         for i in range(9):

@@ -1,9 +1,7 @@
 from ursina import *
 from src.annotation import Annotation
 from src.graphics import Cube
-import numpy as np
-from src.analitic_gui import *
-from random import randint
+from src.myMath import *
 
 
 def get_rotation_type(normal, collider_scale):
@@ -18,18 +16,8 @@ def get_rotation_type(normal, collider_scale):
 
 
 # IDEA maybe this multiplier type to DELETE because of Cntrl+z BAG of rotation if U/D for UP
-def get_multiplier(normal, collider_scale):
+def get_multiplier(normal: Vec3, collider_scale: Vec3):
     # additional multilier for rotating our cube, it's needed 'cause of its structure
-    """"
-    arr = {
-        Vec3(0, 0, -1): [1, 1, 1],  # front
-        Vec3(0, 0, 1) : [-1, 1, -1],  # back
-        Vec3(-1, 0, 0): [1, 1, -1],  # left
-        Vec3(1, 0, 0) : [-1, 1, 1],  # right
-        Vec3(0, 1, 0) : [1, 1, 1],  # top
-        Vec3(0, -1, 0): [1, 1, -1],  # down
-    }
-    """
     flipped = [Vec3(0, 0, 1), Vec3(-1, 0, 0), Vec3(0, -1, 0)]  # back, left, down
     opossite = [Vec3(0, 0, 1), Vec3(1, 0, 0)]  # back, right
     rot_type = get_rotation_type(normal, collider_scale)
@@ -39,7 +27,6 @@ def get_multiplier(normal, collider_scale):
     return 1
 
 
-# TODO develop the right and left algorithm
 # IDEA to recreate ALL colliders on_normalChange()
 class Game(Ursina):
     def __init__(self):
@@ -48,7 +35,7 @@ class Game(Ursina):
         self.history_pos = 0
 
         window.color = color.dark_gray
-        window.windowed_size = 0.3
+        window.windowed_size = 0.5
         window.update_aspect_ratio()
         window.late_init()
 
@@ -71,9 +58,7 @@ class Game(Ursina):
             move = move[:1]
             direction = 1
 
-        self.movement(move, direction)
-
-    # implement right algorithm for rubik's cube
+        self.movement(Move(move, direction))
 
     def redo(self):
         if self.history_pos == len(self.hist):
@@ -86,11 +71,11 @@ class Game(Ursina):
             move = move[:1]
             direction = -1
 
-        self.movement(move, direction)
+        self.movement(Move(move, direction))
 
     def movement(self, move: Move):
-        self.cube.rotate(move.face, move.direction)
-        self.analitic.rotate_r(move.face, move.direction)
+        self.cube.rotate(move)
+        self.analitic.rotate(move)
         # self.analitic.print_cube()
         print(self.hist[:self.history_pos])  # output the histiry taking into account all the undos
 
@@ -110,7 +95,6 @@ class Game(Ursina):
 
     def input(self, key):
         super().input(key)
-
         # action_trigger stops reading input for some milisec
         if not self.action_trigger:
             return
@@ -147,13 +131,13 @@ class Game(Ursina):
         a = [e for e in self.cube.cubes if e.x > 0]
         print(a[1].position, a[1].rotation)
 
-    def append_hist(self, name, direction):
+    def append_hist(self, move: Move):
         # cancel redo and change the "history"
         if self.history_pos < len(self.hist):
             self.hist = self.hist[:self.history_pos]
 
-        sign = '' if direction == 1 else '`'
-        self.hist = np.append(self.hist, [name + sign])
+        sign = '' if move.direction == 1 else '`'
+        self.hist = np.append(self.hist, [move.face + sign])
         self.history_pos += 1
 
     def toggle_animation_trigger(self):

@@ -1,19 +1,9 @@
 import unittest
 from src.annotation import Annotation
-from src.analitic_gui import *
+from src.myMath import *
 from src.solver import *
 import numpy as np
 from sklearn.utils import shuffle
-
-
-def check_if_equal(annotation):
-    # check if every 2 respective elements of 2 arrays are equal
-    sides = ['down', 'front', 'up', 'left', 'right', 'back']
-    for i in range(len(sides)):
-        # res = np.array_equal(annotation.__getattribute__(sides[i]), annotation.__getattribute__(sides[i+1]))
-        exec(f"res = np.array_equal(annotation.{sides[i]}, self.{sides[i]})")
-        exec(f"assert res is True, f'Error, at i={i}, annotation.{sides[i]} and self.{sides[i]}'")
-    return True
 
 
 class TestStringMethods(unittest.TestCase):
@@ -22,6 +12,14 @@ class TestStringMethods(unittest.TestCase):
         val = ["W", "R", "Y", "B", "G", "O"]
         for i in range(len(sides)):
             setattr(self, sides[i], np.array([[val[i]] * 9]).reshape((-1, 3)))
+
+    def check_if_equal(self, annotation):
+        # check if every 2 respective elements of 2 arrays are equal
+        sides = ['down', 'front', 'up', 'left', 'right', 'back']
+        for i in range(len(sides)):
+            res = np.array_equal(getattr(annotation, sides[i]), getattr(self, sides[i]))
+            assert res, f'Error, at i={i}, annotation.{sides[i]} and self.{sides[i]}'
+        return True
 
     def testReturningBack(self):
         # test if after any move forward and backward the cube will return to initial position
@@ -35,66 +33,86 @@ class TestStringMethods(unittest.TestCase):
             comb_array = shuffle(np.array(np.meshgrid(moves, moves)).T.reshape(-1, divs[i]))
             for move in comb_array:
                 for ind in range(len(move)):
-                    annotation.rotate_r(move[ind], 1)
+                    annotation.rotate(Move(move[ind], 1))
             for move in reversed(comb_array):
                 for ind in range(len(move) - 1, -1, -1):
-                    annotation.rotate_r(move[ind], -1)
+                    annotation.rotate(Move(move[ind], -1))
 
-            self.assertTrue(check_if_equal(annotation), f'Error in testReturningBack() at i={i}')
+            assert self.check_if_equal(annotation), f'Error in testReturningBack() at i={i}'
 
     def testCross(self):
         for times in range(25000):
-            cube = Annotation()
-            shuffle_cube(cube)
-            solve_cross()
-            print(f'\r{times} of 25`000', end='')
-            assert check_cross(cube), f"cube not solved \n{cube.print_cube()}"
+            solver = Solver(Annotation())
+            shuffle_cube(solver.cube)
+            solver.solve_cross()
+
+            print(f'\rtestCross: {times} of 25`000', end='')
+            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
     def testLayer(self):
         for times in range(25000):
-            cube = Annotation()
-            shuffle_cube(cube)
-            solve_cross()
-            solve_corners()
+            solver = Solver(Annotation())
+            shuffle_cube(solver.cube)
+            solver.solve_cross()
+            solver.solve_corners()
 
-            print(f'\r{times} of 25`000', end='')
-            assert check_layer(cube), f"cube not solved \n{cube.print_cube()}"
+            print(f'\rtestLayer: {times} of 25`000', end='')
+            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
     def test2Layer(self):
         for times in range(25000):
-            cube = Annotation()
-            shuffle_cube(cube)
-            solve_cross()
-            solve_corners()
-            solve_2layer()
+            solver = Solver(Annotation())
+            shuffle_cube(solver.cube)
+            solver.solve_cross()
+            solver.solve_corners()
+            solver.solve_2layer()
 
-            print(f'\r{times} of 25`000', end='')
-            assert check2Layer(cube), f"cube not solved \n{cube.print_cube()}"
+            print(f'\rtest2Layer: {times} of 25`000', end='')
+            assert solver.check2Layer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
     def testTopCross(self):
         for times in range(25000):
-            cube = Annotation()
-            shuffle_cube(cube)
-            solve_cross()
-            solve_corners()
-            solve_2layer()
-            solveTopCross()
+            solver = Solver(Annotation())
+            shuffle_cube(solver.cube)
+            solver.solve_cross()
+            solver.solve_corners()
+            solver.solve_2layer()
+            solver.solveTopCross()
 
-            print(f'\r{times} of 25`000', end='')
-            assert checkTopCross(cube), f"cube not solved \n{cube.print_cube()}"
+            print(f'\rtestTopCross: {times} of 25`000', end='')
+            assert solver.check2Layer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkTopCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
     def testTopSide(self):
         for times in range(25000):
-            cube = Annotation()
-            shuffle_cube(cube)
-            solve_cross()
-            solve_corners()
-            solve_2layer()
-            solveTopCross()
-            solveTopLayer()
+            solver = Solver(Annotation())
+            shuffle_cube(solver.cube)
+            solver.solve_cross()
+            solver.solve_corners()
+            solver.solve_2layer()
+            solver.solveTopCross()
+            solver.solveTopLayer()
 
-            print(f'\r{times} of 25`000', end='')
-            assert check_top_solved(cube), f"cube not solved \n{cube.print_cube()}"
+            print(f'\rtestTopSide: {times} of 25`000', end='')
+            assert solver.checkTopSolved(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.check2Layer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkTopCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+
+    def testCube(self):
+        for times in range(25000):
+            solver = Solver(Annotation())
+            shuffle_cube(solver.cube)
+            solver.solver()
+
+            print(f'\rtestCube: {times} of 25`000', end='')
+            assert solver.checkSolved(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
 
 if __name__ == '__main__':

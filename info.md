@@ -54,6 +54,7 @@ def get_sides_by_rotation(rot):
 Info about print function:
 
 ```commandline
+
      *      My cube analitic representation
      *                 ------------
      *                 | Y0 Y1 Y2 |
@@ -71,4 +72,18 @@ Info about print function:
      *                 | W6 W7 W8 |
      *                 ------------
    
+```
+
+sides position
+
+```commandline
+arr = {
+        Vec3(0, 0, -1): [1, 1, 1],  # front
+        Vec3(0, 0, 1) : [-1, 1, -1],  # back
+        Vec3(-1, 0, 0): [1, 1, -1],  # left
+        Vec3(1, 0, 0) : [-1, 1, 1],  # right
+        Vec3(0, 1, 0) : [1, 1, 1],  # top
+        Vec3(0, -1, 0): [1, 1, -1],  # down
+    }
+
 ```

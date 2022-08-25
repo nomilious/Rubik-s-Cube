@@ -1,178 +1,181 @@
 import itertools
 from src.annotation import Annotation
-from src.analitic_gui import *
+from src.myMath import *
 from src.annotation import *
 
 
-def solve_cross():
-    # successively obtains edges which must be arranged one after the other
-    for color in ["R", "G", 'O', "B"]:
-        for edge in Edge_to_UF.keys():
-            cur_edge = tuple(get_edge(cube, edge).values())
-            if cur_edge in [(color, "W"), ("W", color)]:
-                # do the needed moves
-                cube.do_moves(parser(Edge_to_UF[edge]))
+class Solver:
+    def __init__(self, cube):
+        self.cube = cube
 
-                # algorithm
-                if get_edge(cube, "UF")["U"] == "W":
-                    cube.do_moves(parser("F F"))
-                else:
-                    cube.do_moves(parser("R U` R` F"))
+    def solve_cross(self):
+        # successively obtains edges which must be arranged one after the other
+        for color in ["R", "G", 'O', "B"]:
+            for edge in Edge_to_UF.keys():
+                cur_edge = tuple(get_edge(self.cube, edge).values())
+                if cur_edge in [(color, "W"), ("W", color)]:
+                    # do the needed moves
+                    self.cube.do_moves(parser(Edge_to_UF[edge]))
 
-                # shift, to solve next edge
-                cube.do_moves(parser("D"))
-                break  # we've solved the needed edge
+                    # algorithm
+                    if get_edge(self.cube, "UF")["U"] == "W":
+                        self.cube.do_moves(parser("F F"))
+                    else:
+                        self.cube.do_moves(parser("R U` R` F"))
 
+                    # shift, to solve next edge
+                    self.cube.do_moves(parser("D"))
+                    break  # we've solved the needed edge
 
-def solve_corners():
-    for colour1, colour2 in [('G', 'R'), ('G', 'O'), ('O', 'B'), ('B', 'R')]:
-        for corner in Corners_to_UFR.keys():
-            cur_corner = get_corner(cube, corner).values()
+    def solve_corners(self):
+        for colour1, colour2 in [('G', 'R'), ('G', 'O'), ('O', 'B'), ('B', 'R')]:
+            for corner in Corners_to_UFR.keys():
+                cur_corner = get_corner(self.cube, corner).values()
 
-            if {colour1, colour2, 'W'} == set(cur_corner):
-                cube.do_moves(parser(Corners_to_UFR[corner]))
+                if {colour1, colour2, 'W'} == set(cur_corner):
+                    self.cube.do_moves(parser(Corners_to_UFR[corner]))
 
-                # algorithm
-                if get_corner(cube, "UFR")['U'] == 'W':
-                    moves = "U R U U R` U R U` R`"
-                elif get_corner(cube, "UFR")['F'] == 'W':
-                    moves = "U R U` R`"
-                else:
-                    moves = "R U R`"
+                    # algorithm
+                    if get_corner(self.cube, "UFR")['U'] == 'W':
+                        moves = "U R U U R` U R U` R`"
+                    elif get_corner(self.cube, "UFR")['F'] == 'W':
+                        moves = "U R U` R`"
+                    else:
+                        moves = "R U R`"
 
-                cube.do_moves(parser(moves))
-                cube.do_moves(parser("D"))  # BAG MAYBE
+                    self.cube.do_moves(parser(moves))
+                    self.cube.do_moves(parser("D"))
+                    break
 
-                break
+    def solve_2layer(self):
+        EDGES = {
+            "UF": "",
+            "UR": "U",
+            "UL": "U`",
+            "UB": "U U",
 
+            "FR": "R` F R F` R U R` U`",
+            "FL": "L` F` L F L U` L` U",
+            "BR": "R` U R B R B` R`",
+            "BL": "L` U` L B` L B L`"
+        }
+        for colour1, colour2 in [('R', 'G'), ('G', 'O'), ('O', 'B'), ('B', 'R')]:
+            for edge, value in EDGES.items():
+                cur_edge = tuple(get_edge(self.cube, edge).values())
 
-def solve_2layer():
-    EDGES = {
-        "UF": "",
-        "UR": "U",
-        "UL": "U`",
-        "UB": "U U",
+                if cur_edge in [(colour1, colour2), (colour2, colour1)]:
+                    self.cube.do_moves(parser(value))
 
-        "FR": "R` F R F` R U R` U`",
-        "FL": "L` F` L F L U` L` U",
-        "BR": "R` U R B R B` R`",
-        "BL": "L` U` L B` L B L`"
-    }
-    for colour1, colour2 in [('R', 'G'), ('G', 'O'), ('O', 'B'), ('B', 'R')]:
-        for edge, value in EDGES.items():
-            cur_edge = tuple(get_edge(cube, edge).values())
+                    moves = "U R U` R` F R` F` R" if get_edge(self.cube, "UF")[
+                                                         'F'] == colour1 else "U U R` F R F` R U R`"
 
-            if cur_edge in [(colour1, colour2), (colour2, colour1)]:
-                cube.do_moves(parser(value))
+                    self.cube.do_moves(parser(moves))
+                    self.cube.y_rotate()
+                    break
 
-                moves = "U R U` R` F R` F` R" if get_edge(cube, "UF")['F'] == colour1 else "U U R` F R F` R U R`"
-
-                cube.do_moves(parser(moves))
-                cube.y_rotate()
-
-                break
-
-
-def solveTopCross():
-    for _ in range(4):
-        top_layer = [get_edge(cube, "UB"), get_edge(cube, "UR"),
-                     get_edge(cube, "UF"), get_edge(cube, "UL")]
-        type = [face['U'] == 'Y' for face in top_layer]
-
-        if type == [False, False, False, False]:
-            moves = "R U U R R F R F` U U R` F R F`"
-        elif type == [False, False, True, True]:
-            moves = "U F U R U` R` F`"
-        elif type == [False, True, False, True]:
-            moves = "F R U R` U` F`"
-        else:
-            moves = "U"
-        cube.do_moves(parser(moves))
-
-
-def check_top_solved(cube):
-    return all(cube.up[i][j] == 'Y' for i, j in itertools.product(range(3), range(3)))
-
-
-# BAG MAYBE I NEED TO DELETE down from flipped and use Ctrl+z, maybe not
-def solveTopLayer():
-    alg = "D` R D R` "
-    while not check_top_solved(cube):
-        if cube.back[0, 0] == 'Y':
-            cube.do_moves(parser(alg * 2))
-        elif cube.right[0, 2] == 'Y':
-            cube.do_moves(parser(alg * 4))
-        else:
-            cube.do_moves(parser('U'))
-
-
-def solveTopLayerEdge():
-    alg = "R U R` F` R U R` U` R` F R R U` R` U`"
-    for __ in range(4):
+    def solveTopCross(self):
         for _ in range(4):
-            if [cube.front[0, 1], cube.right[0, 1]] == [cube.front[1, 1], cube.right[1, 1]][::-1]:
-                cube.do_moves(parser(alg))
-            elif [cube.front[0, 1], cube.right[0, 1]] == [cube.front[1, 1], cube.right[1, 1]]:
-                cube.y_rotate()
-            cube.do_moves(parser("U"))
-        cube.y_rotate()
+            top_layer = [get_edge(self.cube, "UB"), get_edge(self.cube, "UR"),
+                         get_edge(self.cube, "UF"), get_edge(self.cube, "UL")]
+            type = [face['U'] == 'Y' for face in top_layer]
 
-    # returning to the initial position
-    while cube.front[0, 1] != cube.front[1, 1]:
-        cube.do_moves(parser("U`"))
+            if type == [False, False, False, False]:
+                moves = "R U U R R F R F` U U R` F R F`"
+            elif type == [False, False, True, True]:
+                moves = "U F U R U` R` F`"
+            elif type == [False, True, False, True]:
+                moves = "F R U R` U` F`"
+            else:
+                moves = "U"
+            self.cube.do_moves(parser(moves))
 
+    def solveTopLayer(self):
+        alg = "D` R D R` "
+        while not self.checkTopSolved():
+            if self.cube.back[0, 0] == 'Y':
+                self.cube.do_moves(parser(alg * 2))
+            elif self.cube.right[0, 2] == 'Y':
+                self.cube.do_moves(parser(alg * 4))
+            else:
+                self.cube.do_moves(parser('U'))
 
-def solved():
-    return all(cube.up[i][j] == 'Y' for i, j in itertools.product(range(3), range(3))) and \
-           all(cube.down[i][j] == 'W' for i, j in itertools.product(range(3), range(3))) and \
-           all(cube.front[i][j] == 'G' for i, j in itertools.product(range(3), range(3))) and \
-           all(cube.back[i][j] == 'B' for i, j in itertools.product(range(3), range(3))) and \
-           all(cube.left[i][j] == 'R' for i, j in itertools.product(range(3), range(3))) and \
-           all(cube.right[i][j] == 'O' for i, j in itertools.product(range(3), range(3)))
+    def solveTopLayerEdge(self):
+        alg = "R U R` F` R U R` U` R` F R R U` R` U`"
+        for __ in range(4):
+            for _ in range(4):
+                if [self.cube.front[0, 1], self.cube.right[0, 1]] == [self.cube.front[1, 1], self.cube.right[1, 1]][
+                                                                     ::-1]:
+                    self.cube.do_moves(parser(alg))
+                elif [self.cube.front[0, 1], self.cube.right[0, 1]] == [self.cube.front[1, 1], self.cube.right[1, 1]]:
+                    self.cube.y_rotate()
+                self.cube.do_moves(parser("U"))
+            self.cube.y_rotate()
 
+        # returning to the initial position
+        while self.cube.front[0, 1] != self.cube.front[1, 1]:
+            self.cube.do_moves(parser("U`"))
 
-def good_situation():
-    for i, side in enumerate(["front", "right", "back", "left"]):
-        if getattr(cube, side)[0, 0] == getattr(cube, side)[1, 1]:
-            for _ in range(i + 1):
-                cube.y_rotate()
-            return True
-    return False
+    def good_situation(self) -> bool:
+        for i, side in enumerate(["front", "right", "back", "left"]):
+            if getattr(self.cube, side)[0, 0] == getattr(self.cube, side)[1, 1]:
+                for _ in range(i + 1):
+                    self.cube.y_rotate()
+                return True
+        return False
 
+    def solveEdges3Layer(self):
+        alg = "R R D` R R D F F R R U` R R U F F"
 
-# LAST STEP
-def step7():
-    alg = "R R D` R R D F F R R U` R R U F F"
+        while not self.checkSolved():
+            self.good_situation()
+            self.cube.do_moves(parser(alg))
 
-    if not good_situation():
-        cube.do_moves(parser(alg))
-        good_situation()
-    cube.print_cube()
-    cube.do_moves(parser(alg))
-    # FIXME
-    if not solved:
-        cube.do_moves(parser(alg))
+    def solver(self):
+        self.solve_cross()
+        self.solve_corners()
+        self.solve_2layer()
+        self.solveTopCross()
+        self.solveTopLayer()
+        self.solveTopLayerEdge()
+        self.solveEdges3Layer()
 
+    def checkTopSolved(self) -> bool:
+        return all(self.cube.up[i][j] == 'Y' for i, j in itertools.product(range(3), range(3)))
 
-def solver():
-    solve_cross()
-    solve_corners()
-    solve_2layer()
-    solveTopCross()
-    solveTopLayer()
-    solveTopLayerEdge()
+    def check2Layer(self) -> bool:
+        return not any(
+            self.cube.left[1, i] != 'B' or self.cube.right[1, i] != 'G' or self.cube.front[1, i] != 'R' or
+            self.cube.back[1, i] != 'O' for i in range(3)
+        )
 
-    step7()
-    cube.print_cube()
+    def checkDownCross(self) -> bool:
+        cross = self.cube.down[0, 1] == self.cube.down[1, 0] == self.cube.down[1, 2] == self.cube.down[2, 1]
+        adj_edge = [self.cube.left[2, 1], self.cube.front[2, 1], self.cube.right[2, 1], self.cube.back[2, 1]] == \
+                   ['B', 'R', 'G', 'O']
+        return cross and adj_edge
+
+    def checkTopCross(self) -> bool:
+        return self.cube.up[1, 0] == self.cube.up[0, 1] == self.cube.up[1, 2] == self.cube.up[2, 1] == 'Y'
+
+    def checkLayer(self) -> bool:
+        return not any(
+            self.cube.down[i // 3, i % 3] != 'W' or self.cube.left[-1, i] != 'B' or self.cube.right[-1, i] != 'G' or
+            self.cube.front[-1, i] != 'R' or self.cube.back[-1, i] != 'O' for i in range(3)
+        )
+
+    def checkSolved(self) -> bool:
+        for side in ["front", "right", "back", "left"]:
+            for i, j in itertools.product(range(3), range(3)):
+                if getattr(self.cube, side)[i, j] != getattr(self.cube, side)[1, 1]:
+                    return False
+        return True
 
 
 if __name__ == '__main__':
     for times in range(25000):
-        cube = Annotation()
-        shuffle_cube(cube)
-        solver()
-        a = input("INPUT SOMETHING TO CONTINUE")
-
+        solver = Solver(Annotation())
+        shuffle_cube(solver.cube)
+        solver.solver()
+        a = input()
+        assert solver.checkSolved(), "not solved"
         print(f'\r{times} of 25`000', end='')
-        assert check_layer(cube), f"cube not solved \n{cube.print_cube()}"
-        assert check_top_solved(cube), f"cube not solved \n{cube.print_cube()}"

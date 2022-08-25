@@ -5,8 +5,18 @@ import numpy as np
 Edge = NewType("Edge", Dict[str, str])
 Corner = NewType("Corner", Dict[str, str])
 
-# rotate the needed edge until it's on the top layer on the front face
 
+class Move:
+    def __init__(self, *args):
+        if len(args) == 1:  # str is passed
+            self.face = args[0][0]
+            self.direction = -1 if args[0][-1] == '`' else 1
+        else:
+            self.face = args[0]
+            self.direction = args[1]
+
+
+# rotate the needed edge until it's on the top layer on the front face
 Edge_to_UF = {
     "UF": "",
     "UL": "U`",
@@ -80,47 +90,7 @@ def get_corner(cube, sides: str) -> Corner:
 
 def shuffle_cube(cube):
     moves = ['R', "U", "D", "L", "F", "B"]
-    list = ""
     for _ in range(np.random.randint(0, 150)):
         move = np.choose(np.random.randint(0, len(moves), size=1), moves)[0]
         dir = np.choose(np.random.randint(0, 2, size=1), [1, -1])[0]
-        cube.new_rotate_r(Move(move, dir))
-        # add to a list var move
-        list += (move if dir == 1 else f'{move}`') + ' '
-    # print(list)
-
-
-def check2Layer(cube):
-    return not any(
-        cube.left[1, i] != 'B' or cube.right[1, i] != 'G' or cube.front[1, i] != 'R' or cube.back[1, i] != 'O'
-        for i in range(3)
-    )
-
-
-def check_cross(cube):
-    cross = cube.down[0, 1] == cube.down[1, 0] == cube.down[1, 2] == cube.down[2, 1]
-    adj_edge = [cube.left[2, 1], cube.front[2, 1], cube.right[2, 1], cube.back[2, 1]] == ['B', 'R', 'G', 'O']
-    return cross and adj_edge
-
-
-def checkTopCross(cube):
-    return cube.up[1, 0] == cube.up[0, 1] == cube.up[1, 2] == cube.up[2, 1] == 'Y'
-
-
-def check_layer(cube):
-    return not any(
-        cube.down[i // 3, i % 3] != 'W' or cube.left[-1, i] != 'B' or cube.right[-1, i] != 'G' or cube.front[-1,
-                                                                                                             i] != 'R' or
-        cube.back[-1, i] != 'O'
-        for i in range(3)
-    )
-
-
-class Move:
-    def __init__(self, *args):
-        if len(args) == 1:  # str is passed
-            self.face = args[0][0]
-            self.direction = -1 if args[0][-1] == '`' else 1
-        else:
-            self.face = args[0]
-            self.direction = args[1]
+        cube.rotate(Move(move, dir))

@@ -1,4 +1,5 @@
 from ursina import *
+from src.myMath import Move
 
 cube_colors = [
     color.green,  # right
@@ -10,8 +11,7 @@ cube_colors = [
 ]
 
 
-# MAYBE BAG maybe this func is useless and I had to  leave everything rotating as usual without all these coeff
-def get_cubes_location(normal):
+def get_cubes_location(normal: Vec3):
     # gets from position the needed ax to rotate around it and the position of the needed cubes
     coords = ["x", "y", "z"]
     a = [(i, int(e)) for i, e in enumerate(normal) if e != 0]
@@ -21,11 +21,10 @@ def get_cubes_location(normal):
 
 
 # TODO add constructor Cube(annotation)
-# TODO add 3 buttons: shuffle and solve basic(maybe more- solve cross, 1st side, ....), solve master(OLL,...)
 class Cube:
     dt = 0.1
 
-    def __init__(self, size = 1):
+    def __init__(self, size: int = 1):
         self.size = size  # size of squares(width and height)
 
         self.cubes = []
@@ -35,7 +34,7 @@ class Cube:
 
         self.create_model()
         self.create_cube()
-        self.create_sensors()  # create_sensors
+        self.create_sensors()
 
     def create_sensors(self):
         new_sensor = lambda n, p, s, c, vis = False: Entity(
@@ -110,10 +109,10 @@ class Cube:
                     )
                     self.cubes.append(e)
 
-    def rotate(self, collider, direction, speed = 0.5):
+    def rotate(self, move: Move, speed: int = 0.5):
         # get info about clicked collider
         for i in self.parent_col.children:
-            if i.name == collider:
+            if i.name == move.face:
                 coord, sign = get_cubes_location(i.position)
                 break
 
@@ -121,7 +120,7 @@ class Cube:
             f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
             {"self": self}
         )  # reparent to self.rotation_helper
-        eval(f"self.rotation_helper.animate('rotation_{coord}', 90 * {direction}, duration=speed)")
+        eval(f"self.rotation_helper.animate('rotation_{coord}', 90 * {move.direction}, duration=speed)")
 
         invoke(self.reparent_to_scene, delay=speed + 0.11)
 
