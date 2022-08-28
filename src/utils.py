@@ -54,6 +54,11 @@ Corners_to_UFR = {
     "UBL": "U U",
 }
 
+CONST_dt = 0.02
+CONST_speed = 0.5
+CONST_dtime = 0.11
+CONST_dtimeGame = CONST_dtime + CONST_speed
+
 
 def parser(moves: str, inverse: bool = False) -> [str]:
     return [f"{move}`" if move in "FBLRUD" else move[:-1] for move in moves.split()] if inverse else moves.split()

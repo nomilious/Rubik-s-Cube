@@ -1,6 +1,6 @@
 import unittest
 from src.annotation import Annotation
-from src.myMath import *
+from src.utils import *
 from src.solver import *
 import numpy as np
 from sklearn.utils import shuffle
@@ -44,47 +44,47 @@ class TestStringMethods(unittest.TestCase):
         for times in range(25000):
             solver = Solver(Annotation())
             shuffle_cube(solver.cube)
-            solver.solve_cross()
+            solver.solveCross()
 
             print(f'\rtestCross: {times} of 25`000', end='')
-            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownSide(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
     def testLayer(self):
         for times in range(25000):
             solver = Solver(Annotation())
             shuffle_cube(solver.cube)
-            solver.solve_cross()
-            solver.solve_corners()
+            solver.solveCross()
+            solver.solveCorners()
 
             print(f'\rtestLayer: {times} of 25`000', end='')
-            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownSide(), f"cube not checkSolved \n{solver.cube.print_cube()}"
             assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
     def test2Layer(self):
         for times in range(25000):
             solver = Solver(Annotation())
             shuffle_cube(solver.cube)
-            solver.solve_cross()
-            solver.solve_corners()
-            solver.solve_2layer()
+            solver.solveCross()
+            solver.solveCorners()
+            solver.solve2Layer()
 
             print(f'\rtest2Layer: {times} of 25`000', end='')
             assert solver.check2Layer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
-            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownSide(), f"cube not checkSolved \n{solver.cube.print_cube()}"
             assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
     def testTopCross(self):
         for times in range(25000):
             solver = Solver(Annotation())
             shuffle_cube(solver.cube)
-            solver.solve_cross()
-            solver.solve_corners()
-            solver.solve_2layer()
+            solver.solveCross()
+            solver.solveCorners()
+            solver.solve2Layer()
             solver.solveTopCross()
 
             print(f'\rtestTopCross: {times} of 25`000', end='')
             assert solver.check2Layer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
-            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownSide(), f"cube not checkSolved \n{solver.cube.print_cube()}"
             assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
             assert solver.checkTopCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 
@@ -92,16 +92,16 @@ class TestStringMethods(unittest.TestCase):
         for times in range(25000):
             solver = Solver(Annotation())
             shuffle_cube(solver.cube)
-            solver.solve_cross()
-            solver.solve_corners()
-            solver.solve_2layer()
+            solver.solveCross()
+            solver.solveCorners()
+            solver.solve2Layer()
             solver.solveTopCross()
-            solver.solveTopLayer()
+            solver.solveTopSide()
 
             print(f'\rtestTopSide: {times} of 25`000', end='')
             assert solver.checkTopSolved(), f"cube not checkSolved \n{solver.cube.print_cube()}"
             assert solver.check2Layer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
-            assert solver.checkDownCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
+            assert solver.checkDownSide(), f"cube not checkSolved \n{solver.cube.print_cube()}"
             assert solver.checkLayer(), f"cube not checkSolved \n{solver.cube.print_cube()}"
             assert solver.checkTopCross(), f"cube not checkSolved \n{solver.cube.print_cube()}"
 

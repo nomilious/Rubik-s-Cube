@@ -1,9 +1,7 @@
-import numpy as np
 import copy
-from src.myMath import *
+from src.utils import *
 
 
-# TODO add self.Moves to Annotation
 class Annotation:
     def __init__(self, *args):
         sides = ['down', 'front', 'up', 'left', 'right', 'back']
@@ -12,6 +10,7 @@ class Annotation:
             for i, side in enumerate(sides):
                 setattr(self, side, np.array([[val[i]] * 9]).reshape((-1, 3)))
         else:
+            # test
             assert len(args) == 6, "Annotation must have 6 sides"
             for i in range(6):
                 assert len(args[i]) == 9, f"Each side must have 9 elements, error on side {i} "
@@ -19,11 +18,12 @@ class Annotation:
 
             check_frequency = lambda arr: all(arr.count(x) == 9 for x in arr)
             assert check_frequency(all_arr), "All sides must have different colors"
+            # -------------------------------------------------------------------------
             for i, side_ in enumerate(sides):
                 setattr(self, side_, np.array(args[i]).reshape((-1, 3)))
 
     def rotate(self, move: Move):
-        face_rotation_natural = ['L', 'B', 'D']
+        face_rotation_natural = ['L', 'B', 'D']  # rotation is the same as np.rot90
 
         self.adjacent_rotate(move)
         if move.face not in face_rotation_natural:
@@ -34,8 +34,7 @@ class Annotation:
         match move.face:
             case 'F':
                 lst = [copy.deepcopy(self.up[-1, :]), copy.deepcopy(self.left[:, -1][::-1]),
-                       copy.deepcopy(self.down[0, :][::-1]),
-                       copy.deepcopy(self.right[:, 0])]
+                       copy.deepcopy(self.down[0, :][::-1]), copy.deepcopy(self.right[:, 0])]
                 lst = lst[move.direction:] + lst[:move.direction]
 
                 self.up[-1, :] = lst[0]
@@ -84,8 +83,10 @@ class Annotation:
 
     def do_moves(self, moves: [str]):
         for move_name in moves:
-            move = Move(move_name)
-            self.rotate(move)
+            if move_name == 'y':
+                self.y_rotate()
+                continue
+            self.rotate(Move(move_name))
 
     def print_cube(self):
         for i in range(9):
