@@ -1,2 +1,4 @@
 ursina==5.0.0
 numpy==1.23.1
+AppKit==0.6.2
+screeninfo==0.6.7
