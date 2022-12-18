@@ -1,42 +1,24 @@
 from ursina import *
-from src.utils import Move, CONST_dtime, CONST_dt, CONST_speed
-
-cube_colors = [
-    color.green,  # right
-    color.blue,  # left
-    color.yellow,  # top
-    color.white,  # bottom
-    color.orange,  # back
-    color.red,  # front
-]
+from src.utils import Move, DTIME, DLEN, SPEED
+from src.utils import cube_colors, getCubiesLocation
 
 
-def get_cubes_location(normal: Vec3):
-    # gets from position the needed ax to rotate around it and the position of the needed cubes
-    coords = ["x", "y", "z"]
-    a = [(i, int(e)) for i, e in enumerate(normal) if e != 0]
-    sign = ">" if a[0][1] > 0 else "<"
-
-    return coords[a[0][0]], sign
-
-
-# TODO add constructor Cube(annotation)
 class Cube:
     def __init__(self, size: int = 1):
         self.size = size  # size of squares(width and height)
 
         self.cubes = []
-        self.parent_col = Entity(add_to_scene_entities=False)  # colliders' parent
+        self.parentCol = Entity(add_to_scene_entities=False)  # colliders' parent
         self.PARENT = Entity(add_to_scene_entities=False)  # needed for creating the model
-        self.rotation_helper = Entity(add_to_scene_entities=False)
+        self.rotationHelper = Entity(add_to_scene_entities=False)
 
-        self.create_model()
-        self.create_cube()
-        self.create_sensors()
+        self.createModel()
+        self.createCube()
+        self.createColliders()
 
-    def create_sensors(self):
-        new_sensor = lambda n, p, s, c, vis = False: Entity(
-            parent=self.parent_col,
+    def createColliders(self):
+        new_sensor = lambda n, p, s, c, vis=False: Entity(
+            parent=self.parentCol,
             name=n, model="cube", texture="white_cube",
             position=p, scale=s,
             color=c, collider="box",
@@ -44,36 +26,36 @@ class Cube:
         )
         new_sensor(
             "L", (-self.size, 0, 0),
-            (self.size, 3 * self.size + 2 * CONST_dt, 3 * self.size + 2 * CONST_dt),
+            (self.size, 3 * self.size + 2 * DLEN, 3 * self.size + 2 * DLEN),
             color.blue,
         )
         new_sensor(
             "R", (self.size, 0, 0),
-            (self.size, 3 * self.size + 2 * CONST_dt, 3 * self.size + 2 * CONST_dt),
+            (self.size, 3 * self.size + 2 * DLEN, 3 * self.size + 2 * DLEN),
             color.green,
         )
         new_sensor(
             "F", (0, 0, -self.size),
-            (3 * self.size + 2 * CONST_dt, 3 * self.size + CONST_dt, self.size),
+            (3 * self.size + 2 * DLEN, 3 * self.size + DLEN, self.size),
             color.red
         )
         new_sensor(
             "B", (0, 0, self.size),
-            (3 * self.size + 2 * CONST_dt, 3 * self.size + CONST_dt, self.size),
+            (3 * self.size + 2 * DLEN, 3 * self.size + DLEN, self.size),
             color.orange,
         )
         new_sensor(
             "U", (0, self.size, 0),
-            (3 * self.size + CONST_dt, self.size, 3 * self.size + CONST_dt),
+            (3 * self.size + DLEN, self.size, 3 * self.size + DLEN),
             color.yellow,
         )
         new_sensor(
             "D", (0, -self.size, 0),
-            (3 * self.size + CONST_dt, self.size, 3 * self.size + CONST_dt),
+            (3 * self.size + DLEN, self.size, 3 * self.size + DLEN),
             color.white,
         )
 
-    def create_model(self):
+    def createModel(self):
         # create cube's sides: right-left, top-down, front-back
         for i in range(3):
             dir = Vec3(0, 0, 0)
@@ -95,7 +77,7 @@ class Cube:
 
         self.PARENT.combine()
 
-    def create_cube(self):
+    def createCube(self):
         temp = self.size
         for x in range(0, 3 * temp, temp):
             for y in range(0, 3 * temp, temp):
@@ -107,40 +89,30 @@ class Cube:
                     )
                     self.cubes.append(e)
 
-    def get_collider(self, n: str) -> Entity:
-        for child in self.parent_col.children:
+    def getCollider(self, n: str) -> Entity:
+        for child in self.parentCol.children:
             if child.name == n:
                 return child
 
     def y_rotate(self):
-        lst = [deepcopy(self.get_collider(face).position) for face in ['R', 'B', 'L', 'F']]
-        lst2 = [deepcopy(self.get_collider(face).scale) for face in ['R', 'B', 'L', 'F']]
+        lst = [deepcopy(self.getCollider(face).position) for face in ['R', 'B', 'L', 'F']]
+        lst2 = [deepcopy(self.getCollider(face).scale) for face in ['R', 'B', 'L', 'F']]
         for i, face in enumerate(['F', 'R', 'B', 'L']):
-            self.get_collider(face).position = lst[i]
-            self.get_collider(face).scale = lst2[i]
+            self.getCollider(face).position = lst[i]
+            self.getCollider(face).scale = lst2[i]
 
-    # def x_rotate(self):
-    #     lst = [deepcopy(self.get_collider(face).position) for face in ['D', 'F', 'U', 'B']]
-    #     lst2 = [deepcopy(self.get_collider(face).scale) for face in ['D', 'F', 'U', 'B']]
-    #     for i, face in enumerate(['F', 'U', 'B', 'D']):
-    #         self.get_collider(face).position = lst[i]
-    #         self.get_collider(face).scale = lst2[i]
-
-    def rotate(self, move: Move, speed: int = CONST_speed):
+    def rotate(self, move: Move, speed: int = SPEED):
         # get info about clicked collider
-        for i in self.parent_col.children:
-            if i.name == move.face:
-                coord, sign = get_cubes_location(i.position)
-                break
+        coord, sign = getCubiesLocation(self.getCollider(move.face).position)
 
         eval(
-            f"[setattr(e, 'world_parent', self.rotation_helper) for e in self.cubes if e.{coord} {sign} 0]",
+            f"[setattr(e, 'world_parent', self.rotationHelper) for e in self.cubes if e.{coord} {sign} 0]",
             {"self": self}
-        )  # reparent to self.rotation_helper
-        eval(f"self.rotation_helper.animate('rotation_{coord}', 90 * {move.direction}, duration=speed)")
+        )  # reparent to rotationHelper
+        eval(f"self.rotationHelper.animate('rotation_{coord}', 90 * {move.direction}, duration=speed)")
 
-        invoke(self.reparent_to_scene, delay=speed + CONST_dtime)
+        invoke(self.reparentToScene, delay=(speed + DTIME))
 
-    def reparent_to_scene(self):
+    def reparentToScene(self):
         [setattr(e, "world_parent", scene) for e in self.cubes]
-        self.rotation_helper.rotation = (0, 0, 0)
+        self.rotationHelper.rotation = (0, 0, 0)

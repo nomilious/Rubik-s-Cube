@@ -1,9 +1,11 @@
 import copy
-from src.utils import *
+import numpy as np
+from src.utils import Move, move_to_face
 
 
 class Annotation:
     def __init__(self, *args):
+        self.front = self.left = self.back = self.right = ''
         sides = ['down', 'front', 'up', 'left', 'right', 'back']
         if not args:
             val = ["W", "R", "Y", "B", "G", "O"]
@@ -19,28 +21,25 @@ class Annotation:
             check_frequency = lambda arr: all(arr.count(x) == 9 for x in arr)
             assert check_frequency(all_arr), "All sides must have different colors"
             # -------------------------------------------------------------------------
-            for i, side_ in enumerate(sides):
-                setattr(self, side_, np.array(args[i]).reshape((-1, 3)))
+            for i, side in enumerate(sides):
+                setattr(self, side, np.array(args[i]).reshape((-1, 3)))
 
     def rotate(self, move: Move):
         face_rotation_natural = ['L', 'B', 'D']  # rotation is the same as np.rot90
 
-        self.adjacent_rotate(move)
+        self.adjacentRotate(move)
         if move.face not in face_rotation_natural:
             move.direction *= -1
-        self.face_rotate(move)
+        self.faceRotate(move)
 
-    def adjacent_rotate(self, move: Move):
+    def adjacentRotate(self, move: Move):
         match move.face:
             case 'F':
                 lst = [copy.deepcopy(self.up[-1, :]), copy.deepcopy(self.left[:, -1][::-1]),
                        copy.deepcopy(self.down[0, :][::-1]), copy.deepcopy(self.right[:, 0])]
                 lst = lst[move.direction:] + lst[:move.direction]
 
-                self.up[-1, :] = lst[0]
-                self.left[:, -1][::-1] = lst[1]
-                self.down[0, :][::-1] = lst[2]
-                self.right[:, 0] = lst[3]
+                self.up[-1, :], self.left[:, -1][::-1], self.down[0, :][::-1], self.right[:, 0] = lst
             case 'U':
                 lst = [copy.deepcopy(self.back[0, :]), copy.deepcopy(self.left[0, :]), copy.deepcopy(self.front[0, :]),
                        copy.deepcopy(self.right[0, :])]
@@ -56,18 +55,18 @@ class Annotation:
                 self.back[-1, :], self.left[-1, :], self.front[-1, :], self.right[-1, :] = lst
             case 'R':
                 self.y_rotate()
-                self.adjacent_rotate(Move('F', move.direction))
+                self.adjacentRotate(Move('F', move.direction))
                 self.y_rotate(3)
             case 'L':
                 self.y_rotate(3)
-                self.adjacent_rotate(Move('F', -move.direction))
+                self.adjacentRotate(Move('F', -move.direction))
                 self.y_rotate()
             case 'B':
                 self.y_rotate(2)
-                self.adjacent_rotate(Move('F', -move.direction))
+                self.adjacentRotate(Move('F', -move.direction))
                 self.y_rotate(2)
 
-    def face_rotate(self, move: Move):
+    def faceRotate(self, move: Move):
         new_arr = np.rot90(getattr(self, move_to_face[move.face]), move.direction)
         setattr(self, move_to_face[move.face], new_arr)
 
@@ -77,18 +76,18 @@ class Annotation:
                    copy.deepcopy(self.right)]
             lst = lst[-1:] + lst[:-1]
             self.front, self.left, self.back, self.right = lst
-            self.face_rotate(Move('D', 1))
+            self.faceRotate(Move('D', 1))
             for _ in range(3):
-                self.face_rotate(Move('U', 1))
+                self.faceRotate(Move('U', 1))
 
-    def do_moves(self, moves: [str]):
+    def doMoves(self, moves: [str]):
         for move_name in moves:
             if move_name == 'y':
                 self.y_rotate()
                 continue
             self.rotate(Move(move_name))
 
-    def print_cube(self):
+    def printCube(self):
         for i in range(9):
             if i % 3 == 0:
                 print("\n", end="\t\t\t")

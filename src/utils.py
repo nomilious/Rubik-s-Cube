@@ -1,5 +1,6 @@
 from typing import NewType, Dict
 import numpy as np
+from ursina import Vec3, color
 
 # like {Face: color, Face: color,...}
 Edge = NewType("Edge", Dict[str, str])
@@ -54,18 +55,35 @@ Corners_to_UFR = {
     "UBL": "U U",
 }
 
-CONST_dt = 0.02
-CONST_speed = 0.5
-CONST_dtime = 0.11
-CONST_dtimeGame = CONST_dtime + CONST_speed
+cube_colors = [
+    color.green,  # right
+    color.blue,  # left
+    color.yellow,  # top
+    color.white,  # bottom
+    color.orange,  # back
+    color.red,  # front
+]
+
+LEGAL_MOVES = {
+    'undo': "z up",
+    "redo": "y up",
+    "solver": 'a',
+    'next': "mouse1",
+    'back': 'mouse3'
+}
+
+# D stands fro delta
+DLEN = 0.02
+SPEED = 0.5
+DTIME = 0.11
 
 
 def parser(moves: str, inverse: bool = False) -> [str]:
     return [f"{move}`" if move in "FBLRUD" else move[:-1] for move in moves.split()] if inverse else moves.split()
 
 
-def get_edge(cube, sides: str) -> Edge:
-    cube.do_moves(parser(Edge_to_UF[sides]))
+def getEdges(cube, sides: str) -> Edge:
+    cube.doMoves(parser(Edge_to_UF[sides]))
 
     value = Edge(
         {
@@ -74,12 +92,12 @@ def get_edge(cube, sides: str) -> Edge:
         }
     )
     # undo moves
-    cube.do_moves(parser(Edge_to_UF[sides], True)[::-1])
+    cube.doMoves(parser(Edge_to_UF[sides], True)[::-1])
     return value
 
 
-def get_corner(cube, sides: str) -> Corner:
-    cube.do_moves(parser(Corners_to_UFR[sides]))
+def getCorners(cube, sides: str) -> Corner:
+    cube.doMoves(parser(Corners_to_UFR[sides]))
 
     value = Corner(
         {
@@ -89,13 +107,44 @@ def get_corner(cube, sides: str) -> Corner:
         }
     )
     # undo moves
-    cube.do_moves(parser(Corners_to_UFR[sides], True)[::-1])
+    cube.doMoves(parser(Corners_to_UFR[sides], True)[::-1])
     return value
 
 
-def shuffle_cube(cube):
+def shuffleAnnotation(cube):
     moves = ['R', "U", "D", "L", "F", "B"]
     for _ in range(np.random.randint(0, 150)):
         move = np.choose(np.random.randint(0, len(moves), size=1), moves)[0]
         dir = np.choose(np.random.randint(0, 2, size=1), [1, -1])[0]
         cube.rotate(Move(move, dir))
+
+
+def getRotationType(normal: Vec3, collider_scale: Vec3) -> int:
+    ind = [i for i, e in enumerate(normal) if e != 0]
+    rest = round(collider_scale[ind[0]] % 1, 2)
+
+    if rest == 2 * DLEN:  # is R/L
+        return 0
+    elif rest == DLEN:  # is U/D
+        return 1
+    return 2  # is F
+
+
+def getMultiplier(normal: Vec3, collider_scale: Vec3) -> int:
+    # additional multiplier for rotating our cube, it's needed 'cause of its structure
+    flipped = [Vec3(0, 0, 1), Vec3(-1, 0, 0), Vec3(0, -1, 0)]  # back, left, down
+    opposite = [Vec3(0, 0, 1), Vec3(1, 0, 0)]  # back, right
+    rot_type = getRotationType(normal, collider_scale)
+
+    if (rot_type == 0 and normal in opposite) or (rot_type == 2 and normal in flipped):
+        return -1
+    return 1
+
+
+def getCubiesLocation(normal: Vec3) -> (str, str):
+    # gets from position the needed ax to rotate around it and the position of the needed cubes
+    coords = ["x", "y", "z"]
+    a = [(i, int(e)) for i, e in enumerate(normal) if e != 0]
+    sign = ">" if a[0][1] > 0 else "<"
+
+    return coords[a[0][0]], sign
